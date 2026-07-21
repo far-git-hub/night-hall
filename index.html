@@ -513,6 +513,7 @@ function layoutRooms(){
       {x:VW*0.30-7,y:104,w:14,h:12},{x:VW*0.70-7,y:104,w:14,h:12},   // braziers
       {x:VW*0.15-8,y:118,w:16,h:10},{x:VW*0.85-8,y:118,w:16,h:10},   // pillars
       {x:VW*0.15-8,y:186,w:16,h:10},{x:VW*0.85-8,y:186,w:16,h:10},
+      {x:VW*0.22-26,y:160,w:52,h:16},{x:VW*0.78-26,y:160,w:52,h:16}, // fountains
     ],
   };
   if(typeof placeNPCs==='function')placeNPCs();
@@ -620,6 +621,7 @@ function drawHall(){
   R(10,VH-46,15,18,'#5a3a1c'); R(26,VH-46,15,18,'#5a3a1c');
   R(10,VH-42,31,2,'#3a240e'); R(10,VH-34,31,2,'#3a240e');
   candle(VW*0.06,150,11); candle(VW*0.94,140,12);
+  plant(14,110); plant(VW-14,168); flowers(VW*0.30-14,138); flowers(t.x+t.w*0.44,t.y-6);
 }
 // ---------- DOJO ----------
 function drawDojo(){
@@ -661,6 +663,7 @@ function drawDojo(){
   R(tt.x,tt.y-4,tt.w,tt.h,'#4a3420'); R(tt.x+4,tt.y-7,6,4,'#d7cdb8'); R(tt.x+16,tt.y-8,5,5,'#8a6a3a');
   candle(VW*0.08,VH-30,21); candle(VW*0.92,120,22);
   candle(VW*0.30,WALL+16,23); candle(VW*0.70,WALL+16,24);
+  flowers(tt.x+8,tt.y-8); plant(VW*0.06,110); flowers(VW*0.94,VH-46);
   drawExit(rooms.dojo.exit);
 }
 // ---------- THRONE ROOM ----------
@@ -700,7 +703,7 @@ function drawThrone(){
   R(tx2-6,30,12,6,'#ffd94a'); R(tx2-1,26,2,4,'#ffd94a');                // crown finial
   glowAt(tx2,70,80,'rgba(255,210,110,1)',0.20*flick);
   // pillars
-  for(const c of rooms.throne.colliders.slice(3)){
+  for(const c of rooms.throne.colliders.slice(3,7)){
     R(c.x,c.y-64,c.w,72,'#443c58'); R(c.x+2,c.y-64,3,72,'#584e70'); R(c.x+c.w-4,c.y-64,3,72,'#2c2738');
     R(c.x-3,c.y-70,c.w+6,8,'#584e70'); R(c.x-3,c.y+4,c.w+6,6,'#584e70');}
   // braziers with golden fire
@@ -708,7 +711,48 @@ function drawThrone(){
     R(c.x,c.y+2,c.w,8,'#4a3e22'); R(c.x+2,c.y,c.w-4,4,'#6a5a30');
     flame(c.x+c.w/2,c.y+1,8,14,c.x); glowAt(c.x+c.w/2,c.y-6,54,'rgba(255,190,90,1)',0.22*flick);}
   if(Math.random()<.25)spawnPart(gx+(Math.random()-.5)*140,80+Math.random()*120,(Math.random()-.5)*.2,-.25,90,'#ffd94a',1);
+  // white marble fountains with roaming fairies
+  for(const fxr of [0.22,0.78]){
+    const x=VW*fxr, y=164;
+    R(x-27,y+2,54,12,'#b9bfcc'); R(x-27,y+2,54,3,'#dfe4ec');            // basin rim
+    sc.fillStyle='#8fb8d8'; sc.beginPath(); sc.ellipse(x,y+6,21,6,0,0,Math.PI*2); sc.fill();
+    sc.fillStyle='rgba(220,240,255,0.5)';                               // shimmering water
+    sc.fillRect(x-14+Math.sin(tick*0.1)*4,y+4,7,2); sc.fillRect(x+6-Math.sin(tick*0.13)*4,y+7,6,2);
+    R(x-3,y-16,6,22,'#dfe4ec'); R(x-3,y-16,2,22,'#f4f7fb');             // column
+    sc.fillStyle='#eef1f6'; sc.beginPath(); sc.ellipse(x,y-16,11,4,0,0,Math.PI*2); sc.fill();
+    for(let j=0;j<4;j++){ const t2=((tick*0.02)+j/4)%1;                 // arcing water jets
+      const jx=t2*15, jy=-(22*t2-24*t2*t2);
+      sc.fillStyle='rgba(200,232,255,'+(0.85-t2*0.5)+')';
+      sc.fillRect(x-jx-1,y-16+jy,2,3); sc.fillRect(x+jx-1,y-16+jy,2,3); }
+    glowAt(x,y-4,44,'rgba(160,210,255,1)',0.12);
+    flowers(x-34,y+14); flowers(x+34,y+14);
+  }
+  // fairies (drawn above the fountains)
+  for(let i=0;i<6;i++){ const fc=['#ffb8e8','#b8d8ff','#c8ffd0'][i%3], side=i<3?0.22:0.78;
+    const a=tick*0.02+i*2.1;
+    const fx2=VW*side+Math.cos(a)*(20+6*Math.sin(tick*0.011+i));
+    const fy2=138+Math.sin(a*1.7)*14;
+    glowAt(fx2,fy2,10,fc,0.5);
+    sc.fillStyle='#ffffff'; sc.fillRect(fx2-1,fy2-1,2,2);
+    const wf=Math.sin(tick*0.5+i)*2;                                    // wing flutter
+    sc.fillStyle='rgba(255,255,255,0.75)';
+    sc.fillRect(fx2-4,fy2-2+wf,3,1); sc.fillRect(fx2+1,fy2-2-wf,3,1);
+    if(Math.random()<.05)spawnPart(fx2,fy2,(Math.random()-.5)*.3,.15,26,fc,1);
+  }
+  // planters by the dais
+  flowers(gx-66,116); flowers(gx+66,116);
   drawExit(rooms.throne.exit);
+}
+// little flower cluster / potted plant decorations
+function flowers(x,y){
+  R(x-5,y-4,10,5,'#4a3e22'); R(x-5,y-4,10,1,'#6a5a30');
+  R(x-3,y-9,2,5,'#3d6b35'); R(x+1,y-10,2,6,'#356030'); R(x-1,y-12,2,8,'#4c8040');
+  R(x-4,y-11,2,2,'#f4f0ff'); R(x+2,y-12,2,2,'#ffd94a'); R(x-1,y-14,2,2,'#ffb8d0');
+}
+function plant(x,y){
+  R(x-6,y-5,12,6,'#7a4a2a'); R(x-5,y-2,10,3,'#5a3018');
+  R(x-2,y-16,3,11,'#3d6b35'); R(x-6,y-12,4,8,'#4c8040'); R(x+2,y-13,4,9,'#356030');
+  R(x-7,y-15,3,4,'#4c8040'); R(x+4,y-16,3,4,'#3d6b35');
 }
 function drawExit(ex){
   R(ex.cx-ex.hw,VH-8,ex.hw*2,8,'#171019');
@@ -746,12 +790,13 @@ const npcs=[
     skin:'#e6b98e',hair:'#171515',hairStyle:'topknot',
     robe:'#a4222c',robeHi:'#d6444f',robeShade:'#6f1620',long:true,collar:'#f2ede0',
     belt:'#161215',trim:'#e8c25a',boots:'#241a14',acc:'katana',outline:'#1c1214'},
-    q=>haveAll()?{lines:["Five pieces gathered in one night. Hmph. Acceptable, Link.",
-      "Now walk the carpet to the Goddess — back straight, grip loose."],grant:null}
-    :{lines:["So the Master's directive drags you into my dojo, Link.",
-      "I am drawn only in dire need. When the night truly breaks — call my name.",
-      "Until then, train your patience. The fleet is watching how you carry yourself."],grant:null},
-    {parry:true,quips:["Too slow, little hero.","Again. Slower shoulders.","You call THAT a swing?"]}),
+    q=>haveAll()?{lines:["Five artifacts. Show me.",
+      "Verdict: adequate. Verification is the Goddess's to give, not mine.",
+      "Go. Do not keep her waiting."],grant:null}
+    :{lines:["Why are you here?",
+      "The directive is yours. I am drawn only when it breaks. It has not broken.",
+      "Motion is not progress. Finish the work. Straight back."],grant:null},
+    {parry:true,quips:["Too slow.","Again.","Undisciplined."]}),
   mk('Scholar','The Sage','hall',0.27,134,360,{
     skin:'#eab98a',hair:'#5a3d20',hairStyle:'short',glasses:true,
     robe:'#2f8f86',robeHi:'#43b0a0',robeShade:'#1e5f58',long:true,trim:'#ffe08a',
@@ -801,26 +846,29 @@ const npcs=[
         "Your clean copy, Link. Humble work. Nobody does it better."],grant:'clean'};
       return{lines:["All spotless, Link. Don't you dare spill on it."],grant:null};},
     {quips:["HEE-HAW?! Watch the blanket!","I carry EVERYTHING here, and this is my thanks?"]}),
-  mk('Panda','The Doubter','hall',0.80,206,260,{big:true,
+  mk('Panda','The Doubter','hall',0.80,196,260,{big:true,
     skin:'#e8c39a',hair:'#f2f2ee',hairStyle:'none',pandaMask:true,
     robe:'#d8dce0',robeHi:'#f0f2f4',robeShade:'#9aa0a6',long:true,trim:'#2a2a2a',
     boots:'#3a3a3e',acc:null,outline:'#2a2c30'},
-    q=>({lines:["(munch) Why are you even doing this, Link? Did the Master say WHY?",
-      "Everyone in this hall helping you at once... that's precisely when I get suspicious. (munch)",
-      "The roast is excellent, by the way. Go run your errand — I'll be here. Watching. Always watching."],grant:null}),
-    {pose:'sit',munch:true,quips:["…Suspicion confirmed.","Attacking the witness. Bold.","(munch) Rude."]}),
+    q=>haveAll()?{lines:["Wait. You actually finished it? Huh. (munch)",
+      "Half of that pile is gold, half is padding. She'll smell it instantly.",
+      "Go get it stamped, bro. I'll be here. Eating."],grant:null}
+    :{lines:["Bro. Why are you even doing this? Did the Master say WHY?",
+      "Everyone's helping you all at once. That's exactly when I get suspicious.",
+      "They built ten steps for a two-step problem. Off you go — I'm watching."],grant:null},
+    {pose:'sit',munch:true,quips:["Bro. Really?","Nah. This is bullshit.","Worth it? No."]}),
   mk('Goddess','The Sovereign','throne',0.5,108,200,{
     skin:'#f8dcb4',hair:'#ffe9a0',hairStyle:'long',fair:true,hat:'tiara',hatCol:'#ffd94a',
     robe:'#e6c23a',robeHi:'#ffe988',robeShade:'#b8901e',long:true,trim:'#fff4c0',
     boots:'#b8901e',glow:'rgba(255,210,110,1)',outline:'#7a5a10'},
-    q=>{ if(!haveAll())return{lines:["You come to me unready, Link.",
-        "Gather the findings, the numbers, the route, a clean copy, and Mimir's verdict.",
-        "Only with all five will I seal what the Master has asked."],grant:null};
-      if(!q.done)return{lines:["You bear everything, Link. Each piece, in its place.",
-        "I lay my hand upon the Master's directive... and it is sealed.",
-        "Rest now. You carried the fleet through the night — and dawn is yours."],grant:'done'};
-      return{lines:["It is done, Link. The hall is quiet. Well earned."],grant:null};},
-    {pose:'throne',divine:true,quips:["Careful, dear one.","Even mercy has reflexes."]}),
+    q=>{ if(!haveAll())return{lines:["There you are, little hero. Come, let me see what happened.",
+        "You come to me unready. The findings, the numbers, the route, the copy, the verdict — all five.",
+        "Do not worry. They made this harder than it is. Gather them, and I will finish it. You are safe to proceed."],grant:null};
+      if(!q.done)return{lines:["There you are. I am always glad when you are sent to me.",
+        "You have carried this far enough. Give it to me now... Each piece, in its place.",
+        "I lay my hand upon the Master's directive — and it is done. Rest, Link. Dawn is yours."],grant:'done'};
+      return{lines:["It is done. The hall is quiet. You may rest by my light a while."],grant:null};},
+    {pose:'throne',divine:true,quips:["Careful, dear one.","No, my dear. We will not do that."]}),
 ];
 function placeNPCs(){for(const n of npcs)n.x=n.fx*VW;
   player.x=Math.min(Math.max(player.x,14),VW-14);
@@ -933,16 +981,19 @@ function roundRect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,
 function drawHUD(){
   const F=Math.max(13,SH*0.033);
   ctx.textBaseline='alphabetic';
-  const pad=SH*0.022, lh=F*1.3, w=Math.min(SW*0.34,F*15.5), h=lh*(ORDER.length+(haveAll()&&!quest.done?2.5:1.5));
-  ctx.fillStyle='rgba(16,10,20,0.72)'; roundRect(ctx,pad,pad,w,h,10); ctx.fill();
-  ctx.strokeStyle='rgba(200,162,74,0.75)'; ctx.lineWidth=Math.max(1,SH*0.003); ctx.stroke();
-  ctx.font='800 '+F+'px Trebuchet MS'; ctx.fillStyle='#ffd98a';
-  ctx.fillText("THE DIRECTIVE", pad+F*0.7, pad+lh);
-  ctx.font=(F*0.95)+'px Trebuchet MS';
-  ORDER.forEach((k,i)=>{ const y=pad+lh*(i+2), got=quest[k];
-    ctx.fillStyle=got?'#8ee08e':'#b7ac96'; ctx.fillText((got?'✔ ':'○ ')+LABEL[k], pad+F*0.7, y);
-    ctx.fillStyle=got?'#5a7a5a':'#6a6350'; ctx.textAlign='right'; ctx.fillText(OWNER[k], pad+w-F*0.7, y); ctx.textAlign='left';});
-  if(haveAll()&&!quest.done){ ctx.fillStyle='#ffd98a'; ctx.fillText('▸ To the Throne Room!', pad+F*0.7, pad+lh*(ORDER.length+2)); }
+  if(!dlg){ // quest scroll: bottom-right, translucent, above the touch buttons
+    const pad=SH*0.022, lh=F*1.3, w=Math.min(SW*0.34,F*15.5), h=lh*(ORDER.length+(haveAll()&&!quest.done?2.5:1.5));
+    const qx=SW-w-pad, qy=SH-h-pad-(isTouch?Math.min(SW,SH)*0.28:0);
+    ctx.fillStyle='rgba(16,10,20,0.42)'; roundRect(ctx,qx,qy,w,h,10); ctx.fill();
+    ctx.strokeStyle='rgba(200,162,74,0.4)'; ctx.lineWidth=Math.max(1,SH*0.003); ctx.stroke();
+    ctx.font='800 '+F+'px Trebuchet MS'; ctx.fillStyle='rgba(255,217,138,0.9)';
+    ctx.fillText("THE DIRECTIVE", qx+F*0.7, qy+lh);
+    ctx.font=(F*0.95)+'px Trebuchet MS';
+    ORDER.forEach((k,i)=>{ const y=qy+lh*(i+2), got=quest[k];
+      ctx.fillStyle=got?'rgba(142,224,142,0.85)':'rgba(183,172,150,0.8)'; ctx.fillText((got?'✔ ':'○ ')+LABEL[k], qx+F*0.7, y);
+      ctx.fillStyle=got?'rgba(90,122,90,0.8)':'rgba(106,99,80,0.8)'; ctx.textAlign='right'; ctx.fillText(OWNER[k], qx+w-F*0.7, y); ctx.textAlign='left';});
+    if(haveAll()&&!quest.done){ ctx.fillStyle='rgba(255,217,138,0.9)'; ctx.fillText('▸ To the Throne Room!', qx+F*0.7, qy+lh*(ORDER.length+2)); }
+  }
   // interaction prompt
   const n=nearest();
   if(n&&!dlg&&!win&&!trans){ const sx=ox+n.x*scale, sy=oy+(n.y-(n.spec.big?66:(n.spec.donkey?48:(n.pose?42:54)))-2+Math.sin(tick*0.12)*2)*scale;
@@ -981,26 +1032,150 @@ function drawButtons(){
     ctx.beginPath(); ctx.arc(stick.ox+stick.dx,stick.oy+stick.dy,Math.min(SW,SH)*0.05,0,Math.PI*2); ctx.fill();
     ctx.globalAlpha=1;}
 }
+// ===================== PORTRAITS (smooth vector stencils, avatar style) =====================
+const PORTRAITS={};
+function portrait(name,fn){
+  const c=document.createElement('canvas'); c.width=c.height=140;
+  const g=c.getContext('2d');
+  g.fillStyle='#0b0912'; g.fillRect(0,0,140,140);
+  fn(g,'#0b0912'); PORTRAITS[name]=c;
+}
+function ell(g,x,y,rx,ry,rot){g.beginPath();g.ellipse(x,y,rx,ry,rot||0,0,Math.PI*2);g.fill();}
+function poly(g,pts){g.beginPath();g.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<pts.length;i++)g.lineTo(pts[i][0],pts[i][1]);g.closePath();g.fill();}
+portrait('Sensi',(g,B)=>{const C='#b5252c'; g.fillStyle=C;
+  poly(g,[[16,140],[30,102],[70,92],[110,102],[124,140]]);                 // kimono shoulders
+  g.fillStyle=B; poly(g,[[70,96],[54,140],[86,140]]);                      // collar V
+  g.fillStyle=C; ell(g,70,58,28,33);                                       // head
+  ell(g,70,17,12,9); g.fillRect(62,22,16,10);                              // topknot
+  poly(g,[[42,38],[98,38],[104,58],[92,44],[48,44],[36,58]]);              // swept hair
+  g.fillStyle=B;
+  poly(g,[[44,52],[66,58],[66,63],[44,57]]); poly(g,[[96,52],[74,58],[74,63],[96,57]]); // stern brows
+  g.fillRect(48,66,15,3.5); g.fillRect(77,66,15,3.5);                      // narrow eyes
+  g.fillRect(67,72,5,9);                                                   // nose shadow
+  g.fillStyle=C; poly(g,[[54,88],[70,134],[86,88]]);                       // long beard
+  ell(g,70,86,17,7);                                                       // mustache
+  g.fillStyle=B; g.fillRect(62,84,16,3);                                   // grim mouth
+});
+portrait('Panda',(g,B)=>{const C='#e2e0d8'; g.fillStyle=C;
+  ell(g,70,150,58,50);                                                     // big round body
+  g.strokeStyle=C; g.lineWidth=5;
+  g.beginPath();g.arc(34,32,15,0,Math.PI*2);g.stroke();                    // ear rings
+  g.beginPath();g.arc(106,32,15,0,Math.PI*2);g.stroke();
+  ell(g,70,64,40,36);                                                      // head
+  g.fillStyle=B; ell(g,52,60,11,14,-0.35); ell(g,88,60,11,14,0.35);        // eye patches
+  g.strokeStyle=C; g.lineWidth=3.5;
+  g.beginPath();g.arc(52,62,5,Math.PI*1.15,Math.PI*1.85);g.stroke();       // happy closed eyes
+  g.beginPath();g.arc(88,62,5,Math.PI*1.15,Math.PI*1.85);g.stroke();
+  g.fillStyle=B; ell(g,70,78,7,5);                                         // nose
+  g.strokeStyle=B; g.lineWidth=3.5;
+  g.beginPath();g.arc(70,80,13,Math.PI*0.18,Math.PI*0.82);g.stroke();      // grin
+});
+portrait('Goddess',(g,B)=>{const C='#f2c24a'; g.fillStyle=C;
+  g.strokeStyle=C; g.lineWidth=5;
+  g.beginPath();g.ellipse(70,14,22,7,0,0,Math.PI*2);g.stroke();            // halo
+  g.beginPath();g.moveTo(70,22);                                           // flowing hair mass
+  g.bezierCurveTo(24,26,18,74,26,140); g.lineTo(46,140);
+  g.bezierCurveTo(38,96,42,74,48,64); g.lineTo(92,64);
+  g.bezierCurveTo(98,74,102,96,94,140); g.lineTo(114,140);
+  g.bezierCurveTo(122,74,116,26,70,22); g.closePath(); g.fill();
+  ell(g,70,60,24,29);                                                      // face
+  g.strokeStyle=B; g.lineWidth=2.5;
+  g.beginPath();g.ellipse(70,60,24,29,0,-1.15,1.15);g.stroke();            // hair-face separation (right)
+  g.beginPath();g.ellipse(70,60,24,29,0,Math.PI-1.15,Math.PI+1.15);g.stroke(); // (left)
+  g.beginPath();g.moveTo(70,32);g.quadraticCurveTo(52,36,44,50);g.stroke();    // parted hair strands
+  g.beginPath();g.moveTo(70,32);g.quadraticCurveTo(88,36,96,50);g.stroke();
+  g.lineWidth=3;
+  g.beginPath();g.arc(57,62,7,Math.PI*1.1,Math.PI*1.9);g.stroke();         // serene lashes
+  g.beginPath();g.arc(83,62,7,Math.PI*1.1,Math.PI*1.9);g.stroke();
+  g.fillStyle=B; g.fillRect(53,64,3,2); g.fillRect(87,64,3,2);             // lash tips
+  ell(g,70,74,2,3);                                                        // nose
+  g.beginPath();g.arc(70,80,6,Math.PI*0.15,Math.PI*0.85);g.stroke();       // soft smile
+  g.fillRect(58,96,24,3);                                                  // choker line above gown
+});
+portrait('Mimir',(g,B)=>{const C='#8f86d8'; g.fillStyle=C;
+  g.beginPath();g.moveTo(70,8);                                            // pointed hood
+  g.bezierCurveTo(30,22,22,66,28,140); g.lineTo(112,140);
+  g.bezierCurveTo(118,66,110,22,70,8); g.closePath(); g.fill();
+  g.fillStyle=B; ell(g,70,68,22,27);                                       // hood shadow
+  g.fillStyle='#cfc6ff'; ell(g,61,66,4,6); ell(g,79,66,4,6);               // glowing eyes
+  g.globalAlpha=0.35; ell(g,61,66,8,11); ell(g,79,66,8,11); g.globalAlpha=1;
+  g.fillStyle=C; g.fillRect(46,116,48,4);                                  // clasp
+});
+portrait('Scholar',(g,B)=>{const C='#43b0a0'; g.fillStyle=C;
+  poly(g,[[22,140],[34,104],[70,96],[106,104],[118,140]]);                 // robe
+  ell(g,70,60,27,31);                                                      // head
+  poly(g,[[42,46],[98,46],[100,34],[70,26],[40,34]]);                      // short neat hair
+  g.strokeStyle=B; g.lineWidth=3.5;
+  g.beginPath();g.arc(55,64,10,0,Math.PI*2);g.stroke();                    // round glasses
+  g.beginPath();g.arc(85,64,10,0,Math.PI*2);g.stroke();
+  g.beginPath();g.moveTo(65,64);g.lineTo(75,64);g.stroke();
+  g.fillStyle=B; ell(g,55,64,3,3.5); ell(g,85,64,3,3.5);                   // eyes
+  g.beginPath();g.arc(70,80,7,Math.PI*0.15,Math.PI*0.85);g.stroke();       // smile
+});
+portrait('Cyber',(g,B)=>{const C='#4f9ad0'; g.fillStyle=C;
+  poly(g,[[20,140],[32,104],[70,96],[108,104],[120,140]]);                 // jacket
+  ell(g,70,60,27,31);                                                      // head
+  poly(g,[[42,44],[54,30],[62,42],[72,26],[82,42],[92,30],[98,44],[98,52],[42,52]]); // spiky hair
+  g.fillStyle=B; g.fillRect(76,42,3,44);                                   // faceplate seam
+  ell(g,90,64,9,9);                                                        // implant socket
+  g.fillStyle='#ffb060'; ell(g,90,64,4,4);                                 // glowing implant eye
+  g.globalAlpha=0.35; ell(g,90,64,8,8); g.globalAlpha=1;
+  g.fillStyle=B; ell(g,54,64,5,6); g.fillStyle=C; ell(g,54,64,2,2.5);      // human eye
+  g.fillStyle=B; g.fillRect(84,80,10,3); g.fillRect(58,84,14,3);           // plate vent + mouth
+  g.fillStyle='#7fd8ff'; g.fillRect(30,112,26,3); g.fillRect(30,112,3,16); // circuit lines
+});
+portrait('Quant',(g,B)=>{const C='#b4bec8'; g.fillStyle=C;
+  poly(g,[[24,140],[36,110],[104,110],[116,140]]);                         // chassis
+  g.fillRect(66,16,8,14); ell(g,70,12,6,6);                                // antenna
+  roundRect(g,36,30,68,66,12); g.fill();                                   // head
+  g.fillStyle=B; roundRect(g,44,48,52,20,6); g.fill();                     // visor
+  g.fillStyle='#7fe0ff'; g.fillRect(52,53,10,10); g.fillRect(78,53,10,10); // glowing eyes
+  g.fillStyle=B; g.fillRect(54,80,4,8); g.fillRect(62,80,4,8); g.fillRect(70,80,4,8); g.fillRect(78,80,4,8); // grille
+  ell(g,40,62,3,3); ell(g,100,62,3,3);                                     // bolts
+  g.fillStyle='#ffcf5a'; ell(g,70,124,8,8); g.fillStyle=B; ell(g,70,124,4,4); // coin core
+});
+portrait('Donkey',(g,B)=>{const C='#9a939e'; g.fillStyle=C;
+  ell(g,44,26,10,22,-0.25); ell(g,96,26,10,22,0.25);                       // long ears
+  g.fillStyle=B; ell(g,44,26,4.5,13,-0.25); ell(g,96,26,4.5,13,0.25);      // inner ears
+  g.fillStyle=C; ell(g,70,66,30,34);                                       // head
+  ell(g,70,92,22,18);                                                      // muzzle
+  poly(g,[[56,34],[84,34],[80,48],[70,42],[60,48]]);                       // mane tuft
+  g.fillStyle=B; ell(g,60,90,4,5.5); ell(g,80,90,4,5.5);                   // nostrils
+  ell(g,56,60,4,5); ell(g,84,60,4,5);                                      // eyes
+  g.fillRect(50,54,12,3); g.fillRect(78,54,12,3);                          // sleepy lids
+  g.strokeStyle=B; g.lineWidth=3;
+  g.beginPath();g.arc(70,78,16,Math.PI*0.2,Math.PI*0.8);g.stroke();        // muzzle crease
+});
 function drawDialogue(){
   if(!dlg)return;
   dlg.tt=(dlg.tt||0)+1;
   if(dlg.shown<dlg.full.length&&dlg.tt>=2){ dlg.tt=0; const ch=dlg.full[dlg.shown]; dlg.shown++;
     if(ch!==' '&&dlg.shown%2===0)sfxBlip(dlg.agent.voice);}
-  const F=Math.max(16,SH*0.048);
-  const bw=Math.min(SW*0.94,SH*2.4), bh=SH*0.32, bx=(SW-bw)/2, by=SH-bh-SH*0.025;
-  ctx.fillStyle='rgba(14,10,20,0.95)'; roundRect(ctx,bx,by,bw,bh,12); ctx.fill();
+  const F=Math.max(20,SH*0.075);
+  const bw=Math.min(SW*0.96,SH*2.8), bh=SH*0.42, bx=(SW-bw)/2, by=SH-bh-SH*0.02;
+  ctx.fillStyle='rgba(14,10,20,0.95)'; roundRect(ctx,bx,by,bw,bh,14); ctx.fill();
   ctx.strokeStyle='#c8a24a'; ctx.lineWidth=Math.max(2,SH*0.006); ctx.stroke();
-  ctx.font='800 '+(F*1.02)+'px Trebuchet MS'; ctx.fillStyle='#ffd98a';
-  ctx.fillText(dlg.agent.name.toUpperCase(), bx+F, by+F*1.25);
-  ctx.font='italic '+(F*0.68)+'px Trebuchet MS'; ctx.fillStyle='#c89a5a';
-  ctx.fillText('— '+dlg.agent.role, bx+F+ctx.measureText(dlg.agent.name.toUpperCase()).width*1.6+F*0.6, by+F*1.25);
-  ctx.font=(F*0.9)+'px Trebuchet MS'; ctx.fillStyle='#f0e4c8';
-  const words=dlg.full.slice(0,dlg.shown).split(' '); let line='',yy=by+F*2.5; const maxw=bw-F*2;
+  // portrait
+  const ps=bh-F*1.1, px=bx+F*0.55, py=by+F*0.55;
+  const img=PORTRAITS[dlg.agent.name];
+  if(img){ ctx.save(); roundRect(ctx,px,py,ps,ps,10); ctx.clip();
+    ctx.drawImage(img,px,py,ps,ps); ctx.restore();
+    ctx.strokeStyle='rgba(200,162,74,0.8)'; ctx.lineWidth=Math.max(2,SH*0.005);
+    roundRect(ctx,px,py,ps,ps,10); ctx.stroke(); }
+  const tx=px+(img?ps+F*0.6:0);
+  // name + role
+  ctx.font='800 '+F+'px Trebuchet MS'; ctx.fillStyle='#ffd98a';
+  ctx.fillText(dlg.agent.name.toUpperCase(), tx, by+F*1.35);
+  ctx.font='italic '+(F*0.55)+'px Trebuchet MS'; ctx.fillStyle='#c89a5a';
+  ctx.fillText('— '+dlg.agent.role, tx+ctx.measureText(dlg.agent.name.toUpperCase()).width*1.85+F*0.5, by+F*1.35);
+  // body text
+  ctx.font=(F*0.82)+'px Trebuchet MS'; ctx.fillStyle='#f0e4c8';
+  const words=dlg.full.slice(0,dlg.shown).split(' '); let line='',yy=by+F*2.45; const maxw=bx+bw-F*0.7-tx;
   for(const w of words){ const t2=line+w+' ';
-    if(ctx.measureText(t2).width>maxw){ctx.fillText(line,bx+F,yy);line=w+' ';yy+=F*1.18;} else line=t2;}
-  ctx.fillText(line,bx+F,yy);
-  if(dlg.shown>=dlg.full.length){ ctx.fillStyle='#c8a24a'; ctx.font='800 '+(F*0.72)+'px Trebuchet MS'; ctx.textAlign='right';
-    ctx.fillText(dlg.idx>=dlg.lines.length-1?'▸ end':'▸ more', bx+bw-F, by+bh-F*0.6); ctx.textAlign='left';}
+    if(ctx.measureText(t2).width>maxw){ctx.fillText(line,tx,yy);line=w+' ';yy+=F*0.98;} else line=t2;}
+  ctx.fillText(line,tx,yy);
+  if(dlg.shown>=dlg.full.length){ ctx.fillStyle='#c8a24a'; ctx.font='800 '+(F*0.6)+'px Trebuchet MS'; ctx.textAlign='right';
+    ctx.fillText(dlg.idx>=dlg.lines.length-1?'▸ end':'▸ more', bx+bw-F*0.6, by+bh-F*0.5); ctx.textAlign='left';}
 }
 function drawToast(){ if(!toastMsg||toastT<=0)return; toastT--;
   const F=Math.max(15,SH*0.04), a=Math.min(1,toastT/40); ctx.globalAlpha=a;
