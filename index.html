@@ -50,15 +50,14 @@ const VH=240; let VW=426;                       // 16:9-ish virtual res, VW adap
 const scene=document.createElement('canvas'); let sc=scene.getContext('2d');
 let SW=0,SH=0,scale=1,ox=0,oy=0,dpr=1,started=false;
 const isTouch=('ontouchstart' in window)||navigator.maxTouchPoints>0;
-function vpSize(){ // visualViewport beats innerWidth/Height on iOS Safari (toolbar/home-bar quirks)
-  const vv=window.visualViewport;
-  return [Math.round(vv?vv.width:innerWidth), Math.round(vv?vv.height:innerHeight)];
-}
 function resize(){
+  // the canvas element is pinned fullscreen by CSS (fixed, inset 0); size the
+  // drawing buffer from its ACTUAL rendered size — immune to iOS viewport lies
   dpr=Math.min(2,window.devicePixelRatio||1);
-  const [cw,ch]=vpSize();
+  const r=canvas.getBoundingClientRect();
+  const cw=Math.max(1,Math.round(r.width)), ch=Math.max(1,Math.round(r.height));
   SW=Math.floor(cw*dpr); SH=Math.floor(ch*dpr);
-  canvas.width=SW; canvas.height=SH; canvas.style.width=cw+'px'; canvas.style.height=ch+'px';
+  canvas.width=SW; canvas.height=SH;
   VW=Math.round(Math.min(580,Math.max(380,VH*(SW/SH))));
   scene.width=VW; scene.height=VH; sc=scene.getContext('2d'); sc.imageSmoothingEnabled=false;
   scale=Math.max(SW/VW,SH/VH);                  // cover: fill the whole screen, no bars
@@ -67,9 +66,10 @@ function resize(){
   document.getElementById('rotate').style.display=(isTouch&&ch>cw&&started)?'flex':'none';
 }
 addEventListener('resize',resize); addEventListener('orientationchange',()=>setTimeout(resize,250));
+addEventListener('pageshow',resize);
 if(window.visualViewport){visualViewport.addEventListener('resize',resize);visualViewport.addEventListener('scroll',resize);}
-setInterval(()=>{const [cw,ch]=vpSize();     // safety net: iOS toolbars show/hide without firing resize
-  if(Math.abs(cw*dpr-SW)>2||Math.abs(ch*dpr-SH)>2)resize();},600);
+setInterval(()=>{const r=canvas.getBoundingClientRect();  // safety net: iOS toolbars show/hide silently
+  if(Math.abs(r.width*dpr-SW)>2||Math.abs(r.height*dpr-SH)>2)resize();},600);
 
 // ===================== INPUT =====================
 const input={mx:0,my:0,keys:{}};
@@ -1042,7 +1042,7 @@ const inRoom=()=>npcs.filter(n=>n.room===room);
 function nearest(){let b=null,bd=42;for(const n of inRoom()){
   const d=Math.hypot(n.x-player.x,n.y-player.y);if(d<bd){bd=d;b=n;}}return b;}
 function handleTalk(){ if(!started||trans)return;
-  if(chapter){chapter=null;return;}
+  if(chapter){chapter=null;sfxSel();return;}
   if(win){win=false;return;}
   if(dlg){ if(dlg.shown<dlg.full.length){dlg.shown=dlg.full.length;return;}
     dlg.idx++; if(dlg.idx>=dlg.lines.length){closeDlg();return;}
@@ -1115,7 +1115,7 @@ function update(){
   if(trans){ trans.t++;
     if(trans.t===14){room=trans.to;player.x=trans.sx();player.y=trans.sy();
       player.dir=trans.dir||(rooms[room].exit?'u':'d');
-      if(room==='throne'&&!quest.done){ chapter={t:0,dur:320}; banner=null; sfxDivine(); }
+      if(room==='throne'&&!quest.done){ chapter={t:0}; banner=null; sfxDivine(); }
       else banner={text:BANNERS[room],t:150};}
     if(trans.t>=30)trans=null;
     return;}
@@ -1590,12 +1590,11 @@ function drawBanner(){ if(!banner||banner.t<=0)return; banner.t--;
   ctx.strokeStyle='#000'; ctx.lineWidth=Math.max(3,SH*0.008);
   ctx.strokeText(banner.text,SW/2,SH*0.16); ctx.fillStyle='#ffd98a'; ctx.fillText(banner.text,SW/2,SH*0.16);
   ctx.textAlign='left'; ctx.globalAlpha=1;}
-function drawChapter(){ // full-screen chapter card on entering the Goddess's corridor
+function drawChapter(){ // full-screen chapter card — stays until TALK is pressed
   if(!chapter)return;
   chapter.t++;
-  if(chapter.t>=chapter.dur){chapter=null;return;}
-  const t=chapter.t, D=chapter.dur;
-  const a=Math.min(1,t/30)*Math.min(1,(D-t)/45);
+  const t=chapter.t;
+  const a=Math.min(1,t/30);
   ctx.globalAlpha=Math.min(0.9,a*0.9); ctx.fillStyle='#060410'; ctx.fillRect(0,0,SW,SH);
   ctx.globalAlpha=a; ctx.textAlign='center';
   ctx.fillStyle='#c8a24a'; ctx.font=(SH*0.036)+'px Trebuchet MS';
