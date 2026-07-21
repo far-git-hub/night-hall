@@ -9,7 +9,7 @@
   html,body{margin:0;position:fixed;inset:0;width:100%;height:100%;background:#0d0a14;overflow:hidden;
     font-family:'Trebuchet MS','Segoe UI',system-ui,sans-serif;color:#f4ead2;touch-action:none;
     -webkit-user-select:none;user-select:none;}
-  #c{position:fixed;inset:0;width:100%;height:100%;background:#0d0a14;}
+  #c{position:fixed;top:0;left:0;width:100vw;height:100vh;width:100dvw;height:100dvh;background:#0d0a14;}
   #start{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
     background:radial-gradient(circle at 50% 38%,#2a1e38,#0d0a14 78%);z-index:10;text-align:center;padding:20px;overflow:auto;}
   #start h1{font-size:clamp(34px,8.5vw,64px);letter-spacing:6px;color:#ffd98a;margin:0 0 6px;font-weight:800;
@@ -51,11 +51,14 @@ const scene=document.createElement('canvas'); let sc=scene.getContext('2d');
 let SW=0,SH=0,scale=1,ox=0,oy=0,dpr=1,started=false;
 const isTouch=('ontouchstart' in window)||navigator.maxTouchPoints>0;
 function resize(){
-  // the canvas element is pinned fullscreen by CSS (fixed, inset 0); size the
-  // drawing buffer from its ACTUAL rendered size — immune to iOS viewport lies
+  // take the LARGEST viewport measurement available — iOS lies differently
+  // depending on toolbar state, so trust whichever source reports more screen
   dpr=Math.min(2,window.devicePixelRatio||1);
-  const r=canvas.getBoundingClientRect();
-  const cw=Math.max(1,Math.round(r.width)), ch=Math.max(1,Math.round(r.height));
+  const r=canvas.getBoundingClientRect(), de=document.documentElement;
+  const cw=Math.max(1,Math.round(Math.max(r.width,innerWidth||0,de.clientWidth||0)));
+  const ch=Math.max(1,Math.round(Math.max(r.height,innerHeight||0,de.clientHeight||0)));
+  if(Math.abs(r.width-cw)>1||Math.abs(r.height-ch)>1){
+    canvas.style.width=cw+'px'; canvas.style.height=ch+'px';}
   SW=Math.floor(cw*dpr); SH=Math.floor(ch*dpr);
   canvas.width=SW; canvas.height=SH;
   VW=Math.round(Math.min(580,Math.max(380,VH*(SW/SH))));
@@ -65,8 +68,9 @@ function resize(){
   layoutButtons(); layoutRooms();
   document.getElementById('rotate').style.display=(isTouch&&ch>cw&&started)?'flex':'none';
 }
-addEventListener('resize',resize); addEventListener('orientationchange',()=>setTimeout(resize,250));
-addEventListener('pageshow',resize);
+function resizeBurst(){ resize(); setTimeout(resize,120); setTimeout(resize,450); setTimeout(resize,1200); }
+addEventListener('resize',resize); addEventListener('orientationchange',()=>setTimeout(resizeBurst,200));
+addEventListener('pageshow',resizeBurst); addEventListener('focus',resize);
 if(window.visualViewport){visualViewport.addEventListener('resize',resize);visualViewport.addEventListener('scroll',resize);}
 setInterval(()=>{const r=canvas.getBoundingClientRect();  // safety net: iOS toolbars show/hide silently
   if(Math.abs(r.width*dpr-SW)>2||Math.abs(r.height*dpr-SH)>2)resize();},600);
@@ -890,9 +894,10 @@ function drawWorkers(){
   R(pd.x+6,pd.y+12,4,8,'#241708'); R(pd.x+pd.w-10,pd.y+12,4,8,'#241708');
   const mx=pd.x+4, my=WALL-36;
   R(mx-2,my-2,30,24,'#22262c'); R(mx,my,26,20,'#241a08');                // Quant's ledger screen: gold
-  sc.fillStyle='#ffd94a';
-  for(let r2=0;r2<4;r2++){ const w2=7+(((r2*13+(tick>>4))%3))*5; sc.fillRect(mx+3,my+3+r2*4.5,w2,2); }
-  if((tick>>3)&1)sc.fillRect(mx+16,my+16,4,2);                           // blinking caret
+  sc.fillStyle='#ffd94a'; sc.font='6px monospace';
+  const LGR=['$128','+94','$305','-12','$1.2k','+7%'];
+  for(let r2=0;r2<3;r2++)sc.fillText(LGR[(r2+(tick>>5))%6], mx+3, my+7+r2*6);
+  if((tick>>3)&1)sc.fillRect(mx+18,my+15,3,2);                           // blinking caret
   R(mx+9,my+22,8,3,'#22262c'); R(mx+2,my+26,22,3,'#2c3038');             // stand + keyboard
   glowAt(mx+13,my+10,26,'rgba(255,204,90,1)',0.15);
   const sx2=mx+32;                                                        // server tower beside it
@@ -956,27 +961,27 @@ const npcs=[
     robe:'#a4222c',robeHi:'#d6444f',robeShade:'#6f1620',long:true,collar:'#f2ede0',
     belt:'#161215',trim:'#e8c25a',boots:'#241a14',acc:'katana',outline:'#1c1214'},
     q=>haveAll()?{lines:["Five artifacts. Show me.",
-      "Verdict: adequate. Verification is the Goddess's to give, not mine.",
+      "…Verdict: adequate. Verification is the Goddess's to give, not mine.",
       "Go. Do not keep her waiting."],grant:null}
-    :{lines:["Why are you here?",
-      "The directive is yours. I am drawn only when it breaks. It has not broken.",
-      "Motion is not progress. Finish the work. Straight back."],grant:null},
+    :{lines:["Speak. Or leave.",
+      "I am the blade the Master keeps sheathed. I watch the Orchestrator so he does not have to — and right now, Link, I am watching you.",
+      "Motion is not progress. Finish the directive. Do not make me correct your path."],grant:null},
     {parry:true,quips:["So be it. Defend yourself.","You chose this.","Undisciplined. Come."]}),
-  mk('Scholar','The Sage','workers',0.26,142,360,{
+  mk('Scholar','The Sage','workers',0.30,150,360,{
     skin:'#eab98a',hair:'#5a3d20',hairStyle:'short',glasses:true,
     robe:'#2f8f86',robeHi:'#43b0a0',robeShade:'#1e5f58',long:true,trim:'#ffe08a',
     boots:'#3a2a18',acc:'book',outline:'#16302e'},
-    q=>!q.findings?{lines:["The findings for the Master's directive? Bound and ready, Link.",
-      "A thousand pages, distilled to the few that matter.",
+    q=>!q.findings?{lines:["A thousand pages a night, distilled to the few that matter — that is my craft, Link.",
+      "And tonight's craft is done: the findings for the Master's directive, bound and ready.",
       "Here — make them count."],grant:'findings'}
-    :{lines:["The archive is always open to you, Link."],grant:null},
-    {quips:["My spectacles, Link!?","That page was IRREPLACEABLE!"],patrol:{dirn:1,wait:90,pause:180}}),
+    :{lines:["The archive is always open to you, Link. It is the finest room in this house — don't tell the Goddess."],grant:null},
+    {quips:["My spectacles, Link!?","That page was IRREPLACEABLE!"],patrol:{axis:'y',y1:102,y2:150,dirn:-1,wait:90,pause:200}}),
   mk('Mimir','The Critic','hall',0.34,186,300,{
     skin:'#d8a878',hair:'#d4d0e6',hairStyle:'none',hood:'#2c2a58',
     robe:'#3a3a7c',robeHi:'#5252a4',robeShade:'#26264e',long:true,trim:'#a6a0d8',
     boots:'#20203a',acc:'staff',accCol:'#9a8fe0',glowEye:'#bfb4ff',outline:'#1a1832'},
-    q=>{ if(!(q.findings&&q.numbers&&q.clean))return{lines:["A verdict, Link? On what — thin air?",
-        "Bring the findings, the numbers, AND a clean copy. Then I'll unsheathe my judgement.",
+    q=>{ if(!(q.findings&&q.numbers&&q.clean))return{lines:["I am the Critic, Link. I trust nothing — not you, not them, and least of all an easy answer.",
+        "So: a verdict on thin air? No. Bring the findings, the numbers, AND a clean copy. Then I'll unsheathe my judgement.",
         "I certify artifacts. Not good intentions."],grant:null};
       if(!q.verdict)return{lines:["So you truly did the work. I'm... mildly, grudgingly impressed.",
         "Let me cut at it. ...It holds. Barely. The Master will accept this.",
@@ -987,57 +992,57 @@ const npcs=[
     skin:'#e0a878',hair:'#22262c',hairStyle:'short',cyborg:true,circuit:true,armR:'#aab4c0',
     robe:'#2a6ea0',robeHi:'#3f95c8',robeShade:'#1c4c70',long:true,trim:'#63e0ff',
     boots:'#183048',acc:'map',accCol:'#efe4c6',outline:'#12324a'},
-    q=>!q.route?{lines:["The route? Charted and waiting, Link.",
-      "Read-only, mind — I scout, I never book without the Master's word.",
-      "Here's the way through. And the northern pass still wants scouting."],grant:'route'}
-    :{lines:["The map is yours, Link. Fair winds."],grant:null},
+    q=>!q.route?{lines:["I chart every road the Master may ever need, Link. Read-only, always — I scout, I never book.",
+      "And the route you're after? Charted and waiting since sundown.",
+      "Here's the way through. The northern pass still wants scouting."],grant:'route'}
+    :{lines:["The map is yours, Link. Fair winds — my scanners are already on the next horizon."],grant:null},
     {quips:["Recalculating our friendship…","Hostile terrain detected: YOU."]}),
   mk('Quant','The Reckoner','workers',0.72,124,220,{
     skin:'#b8c2cc',hair:'#9aa4b0',hairStyle:'none',robot:true,
     robe:'#9aa4b0',robeHi:'#c5cdd6',robeShade:'#6e7884',long:false,
     pants:'#6e7884',boots:'#3a4048',belt:'#3a4048',trim:'#ffcf5a',acc:'coins',accCol:'#ffcf5a',outline:'#232830'},
-    q=>{ if(!q.findings)return{lines:["Numbers from nothing? Never, Link.",
-        "Bring me Scholar's findings first. I reckon facts, not hopes."],grant:null};
+    q=>{ if(!q.findings)return{lines:["I am the Reckoner, Link. Ledgers, decimals, treasury counts — nothing passes me unverified.",
+        "And numbers from nothing? Never. Bring me Scholar's findings first. I reckon facts, not hopes."],grant:null};
       if(!q.numbers)return{lines:["Ah — the findings. NOW the abacus sings.",
         "There: the numbers. Warn the Master — seven cracks still lurk in the treasury count.",
         "Take them. And do NOT round my decimals."],grant:'numbers'};
       return{lines:["The ledger balances, Link. For tonight."],grant:null};},
     {quips:["That's coming out of YOUR budget.","Invoice issued: one bruise."]}),
   mk('Donkey','The Tidysmith','workers',0.27,206,150,{donkey:true,outline:'#26222b'},
-    q=>{ if(!(q.findings&&q.numbers))return{lines:["A clean copy of WHAT, Link? You've handed me an empty tray.",
-        "Fetch the findings and the numbers. Then I'll scrub them shining."],grant:null};
-      if(!q.clean)return{lines:["Raw material — ahh, my favourite smell.",
-        "Sort... scrub... align... there.",
-        "Your clean copy, Link. Humble work. Nobody does it better."],grant:'clean'};
-      return{lines:["All spotless, Link. Don't you dare spill on it."],grant:null};},
+    q=>{ if(!(q.findings&&q.numbers))return{lines:["Findings... numbers... someone has to scrub them shining. It's dull. It's endless. It's me. (sigh)",
+        "And you've handed me an empty tray, Link. Fetch the findings and the numbers first."],grant:null};
+      if(!q.clean)return{lines:["More raw material. Of course it's me. (sigh) Give it here, then.",
+        "Sort... scrub... align... there. Done. Again. Like every night.",
+        "Your clean copy, Link. Humble work. Nobody wants it — nobody does it better, either."],grant:'clean'};
+      return{lines:["All spotless, Link. Don't spill on it. That's all I ask. Ever."],grant:null};},
     {quips:["HEE-HAW?! Watch the blanket!","I carry EVERYTHING here, and this is my thanks?"]}),
   mk('Panda','The Doubter','hall',0.80,168,260,{big:true,
     skin:'#e8c39a',hair:'#f2f2ee',hairStyle:'none',pandaMask:true,
     robe:'#d8dce0',robeHi:'#f0f2f4',robeShade:'#9aa0a6',long:true,trim:'#2a2a2a',
     boots:'#3a3a3e',acc:null,outline:'#2a2c30'},
-    q=>haveAll()?{lines:["Wait. You actually finished it? Huh. (munch)",
-      "Half of that pile is gold, half is padding. She'll smell it instantly.",
-      "Go get it stamped, bro. I'll be here. Eating."],grant:null}
-    :{lines:["Bro. Why are you even doing this? Did the Master say WHY?",
-      "Everyone's helping you all at once. That's exactly when I get suspicious.",
-      "They built ten steps for a two-step problem. Off you go — I'm watching."],grant:null},
+    q=>haveAll()?{lines:["Look at you. Errand complete. (munch) Didn't see that coming.",
+      "Half of that pile is gold, half is padding. She'll smell the difference instantly.",
+      "Go get it stamped, bro. I'll be here. Eating. Watching."],grant:null}
+    :{lines:["(munch) Don't mind me, bro. I just sit here, eat, and watch the gang pretend to be busy. Best seat in the hall.",
+      "You though — everyone helping you all at once? That's EXACTLY when I get suspicious.",
+      "They built ten steps for a two-step problem. Off you go — I'll be watching every one of them."],grant:null},
     {pose:'sit',munch:true,quips:["Bro. Really?","Nah. This is bullshit.","Worth it? No."]}),
   mk('Goddess','The Sovereign','throne',0.5,108,200,{
     skin:'#f8dcb4',hair:'#ffe9a0',hairStyle:'long',fair:true,hat:'tiara',hatCol:'#ffd94a',
     robe:'#e6c23a',robeHi:'#ffe988',robeShade:'#b8901e',long:true,trim:'#fff4c0',
     boots:'#b8901e',glow:'rgba(255,210,110,1)',outline:'#7a5a10'},
-    q=>{ if(!haveAll())return{lines:["There you are, little hero. Come, let me see what happened.",
-        "You come to me unready. The findings, the numbers, the route, the copy, the verdict — all five.",
-        "Do not worry. They made this harder than it is. Gather them, and I will finish it. You are safe to proceed."],grant:null};
-      if(!q.done)return{lines:["There you are. I am always glad when you are sent to me.",
-        "You have carried this far enough. Give it to me now... Each piece, in its place.",
-        q.respect?"And Sensi's respect besides — even the Swordmaster bows to you. It is done, brave one. Dawn belongs to you."
-                 :"I lay my hand upon the Master's directive — and it is done. Rest, Link. Dawn is yours."],grant:'done'};
-      return{lines:["It is done. The hall is quiet. You may rest by my light a while."],grant:null};},
+    q=>{ if(!haveAll())return{lines:["There you are, my dear child… Come closer, into the light. Let me look at you.",
+        "You are safe here, little one. Whatever the night has broken, you will not carry it alone — I am always, always glad when you come to me.",
+        "Bring me the findings, the numbers, the route, the copy, and the verdict. Then rest, my dear — I will carry what is heavy."],grant:null};
+      if(!q.done)return{lines:["There you are, my dear. Come — you have carried this far enough. Give it to me now, all of it.",
+        "Each piece, in its place… You walked the whole night for this, and you walked it well, my brave little hero.",
+        q.respect?"And Sensi's respect besides — even the Swordmaster bows to you. It is done, dear one. Sleep now; dawn is yours, and my light stays with you."
+                 :"I lay my hand upon the Master's directive — and it is done. Sleep now, dear one. Dawn is yours, and my light stays with you."],grant:'done'};
+      return{lines:["It is done, my dear. The hall is quiet. Stay by my light a while — you are always welcome here."],grant:null};},
     {pose:'throne',divine:true,quips:["Careful, dear one.","No, my dear. We will not do that."]}),
 ];
 function placeNPCs(){for(const n of npcs){n.x=n.fx*VW;
-    if(n.patrol){n.patrol.x1=(n.fx-0.055)*VW;n.patrol.x2=(n.fx+0.055)*VW;}}
+    if(n.patrol&&n.patrol.axis!=='y'){n.patrol.x1=(n.fx-0.055)*VW;n.patrol.x2=(n.fx+0.055)*VW;}}
   player.x=Math.min(Math.max(player.x,14),VW-14);
   player.y=Math.min(Math.max(player.y,WALL+12),VH-8);}
 
@@ -1192,10 +1197,14 @@ function update(){
       if(n.bow%12===0)spawnPart(n.x+(Math.random()-.5)*16,n.y-32,0,-0.3,32,'#fff2c0',2); }
     // ambient life — the fleet keeps living while you wander
     if(!dlg&&n.hurt===0&&n.aggro===0&&!(n.bow>0)){
-      if(n.patrol){ const p=n.patrol;                            // Scholar paces his library
+      if(n.patrol){ const p=n.patrol;                            // Scholar: shelves <-> desk
         if(p.wait>0){ p.wait--; n.moving=false;
           if(p.wait===0)p.dirn*=-1;
           else if(p.wait%50===0)spawnPart(n.x+6,n.y-26,0.1,-0.2,28,'#efe4c6',2); // page flick
+        } else if(p.axis==='y'){
+          n.y+=p.dirn*0.4; n.moving=true; n.dir=p.dirn>0?'d':'u';
+          if(p.dirn>0?n.y>=p.y2:n.y<=p.y1){ p.wait=p.pause; n.moving=false;
+            n.dir=p.dirn>0?'l':'u'; }                            // reads at the desk / browses the shelf
         } else { n.x+=p.dirn*0.45; n.moving=true; n.dir=p.dirn>0?'r':'l';
           if(p.dirn>0?n.x>=p.x2:n.x<=p.x1){ p.wait=p.pause; n.moving=false; n.dir='d'; } } }
       else if(n.name==='Quant'){ n.dir=((tick/260|0)%3)?'u':'d'; }        // typing at his PC
@@ -1277,8 +1286,7 @@ function drawSigns(){ // little golden door signs so visitors never get lost
     ctx.strokeStyle='#000'; ctx.lineWidth=Math.max(2,SH*0.005);
     ctx.strokeText(txt,x,y); ctx.fillStyle='#ffd98a'; ctx.fillText(txt,x,y); ctx.textAlign='left'; };
   if(room==='hall'){
-    put(rooms.hall.doors[0].cx,14,'DOJO');
-    put(rooms.hall.doors[1].cx,14,'THRONE');
+    put(rooms.hall.doors[0].cx,14,'DOJO');   // the golden door stays unmarked — let them discover her
     put(10,130,'◂ WORKSHOP','left');
   } else if(room==='workers'){ put(VW-10,130,'HALL ▸','right'); }
   else if(room==='dojo'){ put(rooms.dojo.exit.cx,VH-16,'HALL ▾'); }
@@ -1452,88 +1460,99 @@ portrait('Sensi',(g,B)=>{
   g.beginPath();g.moveTo(94,109);g.lineTo(110,136);g.stroke();
 });
 
-// —— MIMIR: hooded critic, glowing judging eyes, rune ——
+// —— MIMIR: the Critic — towering horned hood, void face, cold judging light ——
 portrait('Mimir',(g,B)=>{
-  const C='#8a80d8', D='#6058ac', GL='#e2dcff';
-  g.fillStyle=D;poly(g,[[14,140],[28,104],[70,94],[112,104],[126,140]]);          // cloak
-  g.fillStyle=C;                                                                  // hood
-  g.beginPath();g.moveTo(70,8);
-  g.bezierCurveTo(34,20,26,60,32,100);g.quadraticCurveTo(50,112,70,112);
-  g.quadraticCurveTo(90,112,108,100);g.bezierCurveTo(114,60,106,20,70,8);g.closePath();g.fill();
-  g.strokeStyle=B;g.lineWidth=3;                                                  // fabric folds
-  g.beginPath();g.moveTo(70,10);g.quadraticCurveTo(63,26,66,38);g.stroke();
-  g.beginPath();g.moveTo(44,30);g.quadraticCurveTo(38,60,42,92);g.stroke();
-  g.beginPath();g.moveTo(96,30);g.quadraticCurveTo(102,60,98,92);g.stroke();
-  g.fillStyle=B;g.beginPath();g.ellipse(70,74,23,28,0,0,Math.PI*2);g.fill();      // face shadow
-  g.globalAlpha=0.25;g.fillStyle=GL;ell(g,60,73,10,12);ell(g,80,73,10,12);g.globalAlpha=1;
-  g.fillStyle=GL;                                                                 // angular judging eyes
-  poly(g,[[53,71],[66,69],[64,78],[55,77]]);
-  poly(g,[[87,71],[74,69],[76,78],[85,77]]);
-  g.fillStyle=GL;poly(g,[[70,22],[75,29],[70,36],[65,29]]);ell(g,70,42,1.8,1.8);  // rune
-  g.fillStyle=D;ell(g,70,120,7,7);g.fillStyle=C;ell(g,70,120,4,4);g.fillStyle=B;ell(g,70,120,2,2); // clasp
+  const C='#7f74d4', D='#4c4494', GL='#e8e2ff';
+  g.fillStyle=D;poly(g,[[10,140],[24,100],[70,90],[116,100],[130,140]]);          // heavy cloak
+  g.strokeStyle=B;g.lineWidth=2.5;
+  g.beginPath();g.moveTo(70,94);g.lineTo(70,140);g.stroke();                      // cloak split
+  g.beginPath();g.moveTo(40,110);g.lineTo(30,140);g.stroke();
+  g.beginPath();g.moveTo(100,110);g.lineTo(110,140);g.stroke();
+  g.fillStyle=C;                                                                  // tall hood with horn folds
+  g.beginPath();g.moveTo(70,2);
+  g.bezierCurveTo(48,8,36,28,34,54);
+  g.quadraticCurveTo(28,40,18,36);g.quadraticCurveTo(28,60,34,76);                // left horn
+  g.quadraticCurveTo(38,100,54,108);g.quadraticCurveTo(70,114,86,108);
+  g.quadraticCurveTo(102,100,106,76);g.quadraticCurveTo(112,60,122,36);           // right horn
+  g.quadraticCurveTo(112,40,106,54);g.bezierCurveTo(104,28,92,8,70,2);
+  g.closePath();g.fill();
+  g.strokeStyle=B;g.lineWidth=3;
+  g.beginPath();g.moveTo(70,4);g.quadraticCurveTo(63,24,66,38);g.stroke();
+  g.fillStyle=B;g.beginPath();g.ellipse(70,72,24,29,0,0,Math.PI*2);g.fill();      // void where a face should be
+  g.globalAlpha=0.3;g.fillStyle=GL;ell(g,58,70,11,10);ell(g,82,70,11,10);g.globalAlpha=1;
+  g.fillStyle=GL;                                                                 // narrowed, slanted judging eyes
+  poly(g,[[48,64],[66,71],[64,78],[50,72]]);
+  poly(g,[[92,64],[74,71],[76,78],[90,72]]);
+  poly(g,[[70,18],[76,29],[70,40],[64,29]]);ell(g,70,46,2,2);                     // burning rune
+  g.globalAlpha=0.35;poly(g,[[70,12],[80,29],[70,46],[60,29]]);g.globalAlpha=1;
+  g.fillStyle=D;ell(g,70,116,8,8);g.fillStyle=GL;ell(g,70,116,3,3);               // clasp
 });
 
-// —— SCHOLAR: neat hair, round glasses, warm smile, book ——
+// —— SCHOLAR: the Sage — bright-eyed scholar, long hair and bun, quill and tome ——
 portrait('Scholar',(g,B)=>{
-  const C='#41b2a0', D='#2b8172', P='#eee7d0';
-  g.fillStyle=D;poly(g,[[18,140],[32,102],[70,94],[108,102],[122,140]]);          // robe
-  g.fillStyle=C;poly(g,[[58,140],[70,98],[82,140]]);
-  g.fillStyle=C;g.beginPath();g.ellipse(70,58,27,30,0,0,Math.PI*2);g.fill();      // head
-  g.fillStyle=D;                                                                  // neat hair cap with side part
-  g.beginPath();g.moveTo(43,54);
-  g.quadraticCurveTo(38,22,70,20);g.quadraticCurveTo(102,22,97,54);
-  g.quadraticCurveTo(96,40,88,34);g.quadraticCurveTo(70,26,52,36);
-  g.quadraticCurveTo(45,42,43,54);g.closePath();g.fill();
-  g.strokeStyle=B;g.lineWidth=2;
-  g.beginPath();g.moveTo(74,24);g.quadraticCurveTo(84,28,90,38);g.stroke();       // part strand
-  g.strokeStyle=B;g.lineWidth=2.5;                                                // brows
-  g.beginPath();g.moveTo(48,50);g.quadraticCurveTo(55,47,62,50);g.stroke();
-  g.beginPath();g.moveTo(78,50);g.quadraticCurveTo(85,47,92,50);g.stroke();
-  g.strokeStyle=B;g.lineWidth=3.5;                                                // round glasses
-  g.beginPath();g.arc(55,62,10,0,Math.PI*2);g.stroke();
-  g.beginPath();g.arc(85,62,10,0,Math.PI*2);g.stroke();
+  const C='#41b2a0', D='#2b8172', H='#5d3a1e', P='#eee7d0';
+  g.fillStyle=D;poly(g,[[20,140],[32,104],[70,96],[108,104],[120,140]]);          // robe
+  g.fillStyle=C;poly(g,[[56,140],[70,100],[84,140]]);                             // front panel
+  g.fillStyle=H;                                                                  // long hair behind
+  g.beginPath();g.ellipse(70,56,31,33,0,0,Math.PI*2);g.fill();
+  g.beginPath();g.ellipse(43,88,9,20,0.22,0,Math.PI*2);g.fill();                  // side falls
+  g.beginPath();g.ellipse(97,88,9,20,-0.22,0,Math.PI*2);g.fill();
+  ell(g,101,32,9,9);                                                              // bun
+  g.fillStyle=C;g.beginPath();g.ellipse(70,60,24,27,0,0,Math.PI*2);g.fill();      // face
+  g.fillStyle=H;                                                                  // soft fringe, side part
+  g.beginPath();g.moveTo(46,54);g.quadraticCurveTo(44,28,70,24);
+  g.quadraticCurveTo(98,26,96,54);g.quadraticCurveTo(90,38,78,34);
+  g.quadraticCurveTo(58,32,50,44);g.quadraticCurveTo(47,48,46,54);g.closePath();g.fill();
+  g.strokeStyle=B;g.lineWidth=2;                                                  // brows
+  g.beginPath();g.moveTo(48,51);g.quadraticCurveTo(56,48,63,51);g.stroke();
+  g.beginPath();g.moveTo(77,51);g.quadraticCurveTo(84,48,92,51);g.stroke();
+  g.strokeStyle=B;g.lineWidth=3;                                                  // round glasses
+  g.beginPath();g.arc(56,62,9,0,Math.PI*2);g.stroke();
+  g.beginPath();g.arc(84,62,9,0,Math.PI*2);g.stroke();
   g.beginPath();g.moveTo(65,62);g.quadraticCurveTo(70,59,75,62);g.stroke();
-  g.lineWidth=2.5;
-  g.beginPath();g.moveTo(45,60);g.lineTo(43,58);g.stroke();
-  g.beginPath();g.moveTo(95,60);g.lineTo(97,58);g.stroke();
-  g.fillStyle=B;ell(g,55,63,3,3.5);ell(g,85,63,3,3.5);                            // eyes
-  g.fillStyle=C;ell(g,54,61.5,1.2,1.2);ell(g,84,61.5,1.2,1.2);
-  g.strokeStyle=B;g.lineWidth=2.5;
-  g.beginPath();g.moveTo(69,71);g.lineTo(71,73);g.stroke();                       // nose
-  g.beginPath();g.arc(70,77,8,Math.PI*0.15,Math.PI*0.85);g.stroke();              // smile
-  g.fillStyle=D;g.fillRect(94,118,32,18);                                         // book
-  g.fillStyle=P;g.fillRect(97,121,26,5);g.fillStyle=B;g.fillRect(97,127,26,2);
+  g.fillStyle=B;ell(g,56,63,2.6,3.2);ell(g,84,63,2.6,3.2);                        // bright eyes
+  g.fillStyle='#d8f4ee';ell(g,55,61.5,1,1);ell(g,83,61.5,1,1);
+  g.globalAlpha=0.3;g.fillStyle='#d86a6a';ell(g,52,72,3.5,2);ell(g,88,72,3.5,2);g.globalAlpha=1; // blush
+  g.strokeStyle=B;g.lineWidth=2.2;
+  g.beginPath();g.moveTo(69,70);g.lineTo(71,72);g.stroke();                       // nose
+  g.beginPath();g.arc(70,77,6,Math.PI*0.15,Math.PI*0.85);g.stroke();              // warm smile
+  g.fillStyle='#c8912e';poly(g,[[104,44],[113,27],[117,30],[108,47]]);            // quill tucked at her ear
+  g.fillStyle=D;g.fillRect(28,116,28,20);                                         // tome at her side
+  g.fillStyle=P;g.fillRect(31,119,22,5);g.fillStyle=B;g.fillRect(31,126,22,2);
 });
 
-// —— CYBER: cyborg, spiky hair, faceplate + glowing implant ——
+// —— CYBER: the Pathfinder — scanning visor, strong spiked hair, armored shoulder ——
 portrait('Cyber',(g,B)=>{
-  const C='#5aa2d8', D='#2f6da0', M='#b4c0cc', MD='#7e8c9a', A='#ffa03a', CY='#7fe0ff';
-  g.fillStyle=D;poly(g,[[16,140],[30,104],[70,96],[110,104],[124,140]]);          // jacket
-  g.strokeStyle=CY;g.lineWidth=2.5;                                               // circuit traces
-  g.beginPath();g.moveTo(36,116);g.lineTo(52,116);g.lineTo(52,132);g.stroke();
-  g.fillStyle=CY;ell(g,52,132,2.2,2.2);
-  g.fillStyle=C;g.fillRect(62,84,16,14);                                          // neck
-  g.fillStyle=C;g.beginPath();g.ellipse(70,56,27,31,0,0,Math.PI*2);g.fill();      // head
-  g.fillStyle=M;                                                                  // metal plate (right)
-  g.beginPath();g.moveTo(78,26);g.quadraticCurveTo(100,30,97,58);
-  g.quadraticCurveTo(97,76,88,85);g.lineTo(78,85);g.closePath();g.fill();
+  const C='#57a0d8', D='#28608f', M='#b8c4d0', A='#ffa03a', CY='#7fe0ff';
+  g.fillStyle=D;poly(g,[[16,140],[30,102],[70,94],[110,102],[124,140]]);          // jacket
+  g.fillStyle=M;poly(g,[[86,102],[114,102],[122,124],[92,124]]);                  // armored shoulder
   g.strokeStyle=B;g.lineWidth=2;
-  g.beginPath();g.moveTo(78,26);g.lineTo(78,85);g.stroke();                       // seam
-  g.beginPath();g.moveTo(78,44);g.lineTo(95,44);g.stroke();
-  g.fillStyle=MD;ell(g,91,35,2.2,2.2);ell(g,84,79,2.2,2.2);                       // bolts
-  g.fillStyle=B;ell(g,88,58,8,8);                                                 // implant socket
-  g.globalAlpha=0.3;g.fillStyle=A;ell(g,88,58,11,11);g.globalAlpha=1;
-  g.fillStyle=A;ell(g,88,58,4.5,4.5);g.fillStyle='#fff0d8';ell(g,88,58,1.6,1.6);
-  g.fillStyle=D;                                                                  // jagged dark hair
-  g.beginPath();g.moveTo(44,50);
-  g.quadraticCurveTo(40,22,70,20);g.quadraticCurveTo(84,20,90,26);
-  g.lineTo(78,30);g.lineTo(72,23);g.lineTo(68,33);g.lineTo(58,25);g.lineTo(58,37);g.lineTo(48,33);
-  g.quadraticCurveTo(46,42,44,50);g.closePath();g.fill();
-  g.fillStyle=B;poly(g,[[46,49],[64,47],[64,51],[46,53]]);                        // brow slash
-  poly(g,[[46,56],[64,54],[62,62],[48,62]]);                                      // sharp eye
-  g.fillStyle=C;ell(g,55,58,2,2);
+  g.beginPath();g.moveTo(90,110);g.lineTo(116,110);g.stroke();
+  g.beginPath();g.moveTo(92,117);g.lineTo(118,117);g.stroke();
+  g.strokeStyle=CY;g.lineWidth=2.5;                                               // circuit traces
+  g.beginPath();g.moveTo(34,114);g.lineTo(50,114);g.lineTo(50,130);g.stroke();
+  g.fillStyle=CY;ell(g,50,130,2.2,2.2);
+  g.fillStyle=C;g.fillRect(61,84,18,12);                                          // neck
+  g.fillStyle=C;g.beginPath();g.ellipse(70,56,28,31,0,0,Math.PI*2);g.fill();      // head
+  g.fillStyle=D;                                                                  // strong spiked hair
+  g.beginPath();g.moveTo(42,52);
+  g.quadraticCurveTo(38,20,70,18);g.quadraticCurveTo(102,20,98,52);
+  g.lineTo(92,40);g.lineTo(88,50);g.lineTo(82,32);g.lineTo(76,46);
+  g.lineTo(70,28);g.lineTo(63,46);g.lineTo(56,32);g.lineTo(52,50);g.lineTo(46,40);
+  g.closePath();g.fill();
+  g.fillStyle=M;poly(g,[[70,50],[100,48],[100,66],[70,68]]);                      // scanning visor (right)
+  g.strokeStyle=B;g.lineWidth=2;
+  g.beginPath();g.moveTo(70,48);g.lineTo(70,70);g.stroke();                       // mount seam
+  g.fillStyle=B;g.fillRect(74,53,22,9);
+  g.fillStyle=A;g.fillRect(76+((tick*0)|0),56,18,3);                              // scan bar
+  g.globalAlpha=0.3;g.fillStyle=A;g.fillRect(72,50,26,14);g.globalAlpha=1;
+  g.fillStyle='#fff0d8';g.fillRect(90,56,3,3);                                     // hot pixel
+  g.fillStyle=B;poly(g,[[44,48],[64,46],[64,50],[44,52]]);                        // brow slash
+  poly(g,[[45,55],[64,53],[62,62],[47,62]]);                                      // sharp human eye
+  g.fillStyle=CY;ell(g,55,58,2.4,2.4);
   g.strokeStyle=B;g.lineWidth=2.5;
-  g.beginPath();g.moveTo(58,78);g.quadraticCurveTo(68,82,76,78);g.stroke();       // smirk
+  g.beginPath();g.moveTo(58,78);g.quadraticCurveTo(70,82,80,77);g.stroke();       // confident smirk
+  g.fillStyle=M;ell(g,98,72,3,3);                                                  // jaw bolt
 });
 
 // —— QUANT: friendly ledger-bot, glowing visor eyes, coin core ——
@@ -1571,8 +1590,8 @@ portrait('Quant',(g,B)=>{
 // —— DONKEY: skeptical long-eared tidysmith chewing straw ——
 portrait('Donkey',(g,B)=>{
   const C='#a89fae', D='#7c7482', MN='#4a4452', MU='#d2ccd8', BL='#7a3a2a', BT='#d8c69a', ST='#e0b95a';
-  g.fillStyle=C;g.beginPath();g.ellipse(42,22,11,24,-0.28,0,Math.PI*2);g.fill();  // ear up
-  g.fillStyle=B;g.beginPath();g.ellipse(42,24,5,15,-0.28,0,Math.PI*2);g.fill();
+  g.fillStyle=C;g.beginPath();g.ellipse(36,32,10,22,-1.0,0,Math.PI*2);g.fill();   // ear drooping low
+  g.fillStyle=B;g.beginPath();g.ellipse(34,33,4.5,13,-1.0,0,Math.PI*2);g.fill();
   g.fillStyle=C;                                                                  // ear flopped
   g.beginPath();g.moveTo(88,20);g.quadraticCurveTo(114,6,124,26);
   g.quadraticCurveTo(112,38,94,34);g.closePath();g.fill();
@@ -1587,16 +1606,19 @@ portrait('Donkey',(g,B)=>{
   g.fillStyle=B;                                                                  // nostrils
   g.beginPath();g.ellipse(60,92,4,5.5,-0.3,0,Math.PI*2);g.fill();
   g.beginPath();g.ellipse(84,92,4,5.5,0.3,0,Math.PI*2);g.fill();
-  g.strokeStyle=B;g.lineWidth=2.5;                                                // mouth
-  g.beginPath();g.moveTo(58,102);g.quadraticCurveTo(72,108,86,102);g.stroke();
+  g.strokeStyle=B;g.lineWidth=2.5;                                                // weary downturned mouth
+  g.beginPath();g.moveTo(58,103);g.quadraticCurveTo(72,97,86,104);g.stroke();
   g.strokeStyle=ST;g.lineWidth=3;                                                 // straw
   g.beginPath();g.moveTo(84,103);g.lineTo(112,88);g.stroke();
   g.fillStyle=ST;poly(g,[[112,88],[121,83],[114,93]]);
   g.fillStyle=B;ell(g,54,58,5.5,6);ell(g,88,58,5.5,6);                            // eyes
-  g.fillStyle=C;g.fillRect(46,49,17,7);g.fillRect(80,49,17,7);                    // heavy lids
+  g.fillStyle=C;g.fillRect(46,49,17,8);g.fillRect(80,49,17,8);                    // heavier lids
   g.strokeStyle=B;g.lineWidth=2.5;
-  g.beginPath();g.moveTo(47,56);g.lineTo(62,56);g.stroke();
-  g.beginPath();g.moveTo(81,56);g.lineTo(96,56);g.stroke();
+  g.beginPath();g.moveTo(47,57);g.lineTo(62,57);g.stroke();
+  g.beginPath();g.moveTo(81,57);g.lineTo(96,57);g.stroke();
+  g.beginPath();g.moveTo(46,51);g.lineTo(61,48);g.stroke();                       // sad brows, inner raised
+  g.beginPath();g.moveTo(96,51);g.lineTo(81,48);g.stroke();
+  g.fillStyle='#8fc0e8';ell(g,51,68,2,3.5);                                        // a single weary tear
   g.fillStyle=BL;g.fillRect(34,122,72,18);                                        // tidy blanket
   g.fillStyle=BT;g.fillRect(34,122,72,4);g.fillRect(34,136,72,4);
   g.fillRect(50,129,5,5);g.fillRect(68,129,5,5);g.fillRect(86,129,5,5);
@@ -1736,7 +1758,7 @@ document.getElementById('go').addEventListener('click',()=>{
     l1:'The Master has retired, and the great hall glows with firelight.',
     l2:'The fleet is waiting for you, little hero — walk among them,',
     l3:'and gather the five pieces of the directive before dawn.'};
-  startAudio();
+  startAudio(); resizeBurst();
 });
 resize(); frame();
 </script>
