@@ -542,12 +542,13 @@ function layoutRooms(){
     doors:[], exit:null,
     sideDoors:[{side:'right',cy:158,hh:22,to:'hall',dir:'r',sx:()=>26,sy:()=>158}],
     colliders:[
-      {x:0,y:WALL+2,w:W*0.32,h:12},            // library shelves base
-      {x:W*0.05,y:118,w:W*0.14,h:16},          // reading desk
-      {x:W*0.60,y:WALL+2,w:W*0.33,h:16},       // PC desk
-      {x:W*0.03,y:184,w:W*0.20,h:5},           // pen fence (front)
-      {x:W*0.225,y:184,w:6,h:VH-190},          // pen fence (side)
-      {x:W-44,y:VH-38,w:34,h:16},              // crates
+      {x:W*0.08,y:WALL+2,w:W*0.32,h:12},       // library shelves base
+      {x:W*0.13,y:118,w:W*0.14,h:16},          // reading desk
+      {x:W*0.50,y:WALL+2,w:W*0.33,h:16},       // PC desk
+      {x:W*0.13,y:184,w:W*0.20,h:5},           // pen fence (front)
+      {x:W*0.125,y:184,w:6,h:VH-190},          // pen fence (left)
+      {x:W*0.325,y:184,w:6,h:VH-190},          // pen fence (right)
+      {x:W*0.72,y:VH-38,w:34,h:16},            // crates
     ],
   };
   if(typeof placeNPCs==='function')placeNPCs();
@@ -818,13 +819,13 @@ function drawWorkers(){
   R(rx2,140,rw2,52,'#5e3a1d'); R(rx2+4,144,rw2-8,44,'#73482a');
   R(rx2+8,148,rw2-16,2,'#c8a24a'); R(rx2+8,182,rw2-16,2,'#c8a24a');
   for(let x=rx2+12;x<rx2+rw2-12;x+=18)R(x,164,8,3,'#c8a24a');
-  // --- library (left): three tall shelves + ladder ---
-  for(let i=0;i<3;i++){ const bx=8+i*(VW*0.098), bw=VW*0.088;
+  // --- library (left of center): three tall shelves + ladder ---
+  for(let i=0;i<3;i++){ const bx=VW*0.10+i*(VW*0.098), bw=VW*0.088;
     R(bx,6,bw,WALL-4,'#3a2818'); R(bx+2,8,bw-4,WALL-12,'#241708');
     for(let s2=0;s2<3;s2++){ R(bx+2,12+s2*15,bw-4,2,'#4a3420');
       for(let b2=0;b2<6;b2++)R(bx+3+b2*((bw-6)/6),14+s2*15+((b2*7)%3),(bw-6)/6-1,10-((b2*5)%3),
         ['#7a3a2a','#3a5a3a','#3a3a6a','#8a6a2a','#5a2a5a','#2a5a6a'][(b2+i)%6]);}}
-  R(VW*0.30,10,3,WALL-6,'#6a4a2a'); R(VW*0.295,14,10,2,'#6a4a2a'); R(VW*0.295,30,10,2,'#6a4a2a'); R(VW*0.295,46,10,2,'#6a4a2a'); // ladder
+  R(VW*0.40,10,3,WALL-6,'#6a4a2a'); R(VW*0.395,14,10,2,'#6a4a2a'); R(VW*0.395,30,10,2,'#6a4a2a'); R(VW*0.395,46,10,2,'#6a4a2a'); // ladder
   // reading desk with open tome + candle
   const rd=rooms.workers.colliders[1];
   R(rd.x,rd.y-6,rd.w,rd.h,'#5a4226'); R(rd.x,rd.y-6,rd.w,3,'#6f5433');
@@ -849,19 +850,19 @@ function drawWorkers(){
   R(sx2+18,WALL-8,20,2,'#14141a');                                      // cable
   // stools
   R(pd.x+pd.w*0.25,pd.y+22,12,4,'#4a3420'); R(pd.x+pd.w*0.55,pd.y+24,12,4,'#4a3420');
-  // --- Donkey's pen (bottom-left): fence + haystack ---
+  // --- Donkey's pen (bottom, left of center): fence + haystack ---
   const pf=rooms.workers.colliders[3];
   for(let x=pf.x;x<pf.x+pf.w;x+=11){ R(x,178,3,12,'#5a4226'); }
   R(pf.x,181,pf.w,2,'#6f5433'); R(pf.x,186,pf.w,2,'#6f5433');
-  const ps2=rooms.workers.colliders[4];
-  for(let y=184;y<VH-8;y+=12){ R(ps2.x,y,3,10,'#5a4226'); }
-  R(ps2.x+1,184,2,VH-192,'#6f5433');
-  sc.fillStyle='#c8a24a'; sc.beginPath(); sc.ellipse(VW*0.085,216,17,9,0,0,Math.PI*2); sc.fill();
-  sc.fillStyle='#e0bc5e'; sc.beginPath(); sc.ellipse(VW*0.075,210,11,6,0,0,Math.PI*2); sc.fill();
-  R(VW*0.06,206,2,4,'#a6841e'); R(VW*0.10,212,3,2,'#a6841e'); R(VW*0.115,204,2,4,'#a6841e');
-  R(VW*0.19,214,10,8,'#5a3a1c'); R(VW*0.19,214,10,2,'#7a5a2c');          // feed bucket
+  for(const ps2 of [rooms.workers.colliders[4],rooms.workers.colliders[5]]){
+    for(let y=184;y<VH-8;y+=12){ R(ps2.x,y,3,10,'#5a4226'); }
+    R(ps2.x+1,184,2,VH-192,'#6f5433'); }
+  sc.fillStyle='#c8a24a'; sc.beginPath(); sc.ellipse(VW*0.18,216,17,9,0,0,Math.PI*2); sc.fill();
+  sc.fillStyle='#e0bc5e'; sc.beginPath(); sc.ellipse(VW*0.17,210,11,6,0,0,Math.PI*2); sc.fill();
+  R(VW*0.155,206,2,4,'#a6841e'); R(VW*0.195,212,3,2,'#a6841e'); R(VW*0.21,204,2,4,'#a6841e');
+  R(VW*0.29,214,10,8,'#5a3a1c'); R(VW*0.29,214,10,2,'#7a5a2c');          // feed bucket
   // crates bottom-right
-  const cr=rooms.workers.colliders[5];
+  const cr=rooms.workers.colliders[6];
   R(cr.x,cr.y-8,16,16,'#5a4226'); R(cr.x+17,cr.y-4,16,12,'#4a3420');
   R(cr.x+2,cr.y-6,12,2,'#6f5433'); R(cr.x+4,cr.y+2,8,2,'#6f5433');
   // lanterns + plants
@@ -910,7 +911,7 @@ const npcs=[
       "The directive is yours. I am drawn only when it breaks. It has not broken.",
       "Motion is not progress. Finish the work. Straight back."],grant:null},
     {parry:true,quips:["Too slow.","Again.","Undisciplined."]}),
-  mk('Scholar','The Sage','workers',0.14,140,360,{
+  mk('Scholar','The Sage','workers',0.22,142,360,{
     skin:'#eab98a',hair:'#5a3d20',hairStyle:'short',glasses:true,
     robe:'#2f8f86',robeHi:'#43b0a0',robeShade:'#1e5f58',long:true,trim:'#ffe08a',
     boots:'#3a2a18',acc:'book',outline:'#16302e'},
@@ -931,7 +932,7 @@ const npcs=[
         "My verdict is yours, Link. Don't make me regret the ink."],grant:'verdict'};
       return{lines:["Already signed. Go trouble Panda if you're restless."],grant:null};},
     {quips:["Noted. FOREVER.","Adding this to my verdict."]}),
-  mk('Cyber','The Pathfinder','workers',0.86,132,280,{
+  mk('Cyber','The Pathfinder','workers',0.75,136,280,{
     skin:'#e0a878',hair:'#22262c',hairStyle:'short',cyborg:true,circuit:true,armR:'#aab4c0',
     robe:'#2a6ea0',robeHi:'#3f95c8',robeShade:'#1c4c70',long:true,trim:'#63e0ff',
     boots:'#183048',acc:'map',accCol:'#efe4c6',outline:'#12324a'},
@@ -940,7 +941,7 @@ const npcs=[
       "Here's the way through. And the northern pass still wants scouting."],grant:'route'}
     :{lines:["The map is yours, Link. Fair winds."],grant:null},
     {quips:["Recalculating our friendship…","Hostile terrain detected: YOU."]}),
-  mk('Quant','The Reckoner','workers',0.70,126,220,{
+  mk('Quant','The Reckoner','workers',0.60,126,220,{
     skin:'#b8c2cc',hair:'#9aa4b0',hairStyle:'none',robot:true,
     robe:'#9aa4b0',robeHi:'#c5cdd6',robeShade:'#6e7884',long:false,
     pants:'#6e7884',boots:'#3a4048',belt:'#3a4048',trim:'#ffcf5a',acc:'coins',accCol:'#ffcf5a',outline:'#232830'},
@@ -951,7 +952,7 @@ const npcs=[
         "Take them. And do NOT round my decimals."],grant:'numbers'};
       return{lines:["The ledger balances, Link. For tonight."],grant:null};},
     {quips:["That's coming out of YOUR budget.","Invoice issued: one bruise."]}),
-  mk('Donkey','The Tidysmith','workers',0.13,208,150,{donkey:true,outline:'#26222b'},
+  mk('Donkey','The Tidysmith','workers',0.24,206,150,{donkey:true,outline:'#26222b'},
     q=>{ if(!(q.findings&&q.numbers))return{lines:["A clean copy of WHAT, Link? You've handed me an empty tray.",
         "Fetch the findings and the numbers. Then I'll scrub them shining."],grant:null};
       if(!q.clean)return{lines:["Raw material — ahh, my favourite smell.",
