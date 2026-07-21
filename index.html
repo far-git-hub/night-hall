@@ -9,7 +9,7 @@
   html,body{margin:0;position:fixed;inset:0;width:100%;height:100%;background:#0d0a14;overflow:hidden;
     font-family:'Trebuchet MS','Segoe UI',system-ui,sans-serif;color:#f4ead2;touch-action:none;
     -webkit-user-select:none;user-select:none;}
-  #c{position:fixed;top:0;left:0;width:100vw;height:100vh;width:100dvw;height:100dvh;background:#0d0a14;}
+  #c{position:fixed;inset:0;width:100%;height:100%;background:#0d0a14;}
   #start{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
     background:radial-gradient(circle at 50% 38%,#2a1e38,#0d0a14 78%);z-index:10;text-align:center;padding:20px;overflow:auto;}
   #start h1{font-size:clamp(34px,8.5vw,64px);letter-spacing:6px;color:#ffd98a;margin:0 0 6px;font-weight:800;
@@ -51,14 +51,11 @@ const scene=document.createElement('canvas'); let sc=scene.getContext('2d');
 let SW=0,SH=0,scale=1,ox=0,oy=0,dpr=1,started=false;
 const isTouch=('ontouchstart' in window)||navigator.maxTouchPoints>0;
 function resize(){
-  // take the LARGEST viewport measurement available — iOS lies differently
-  // depending on toolbar state, so trust whichever source reports more screen
+  // the canvas element is pinned fullscreen by CSS (fixed, inset 0); size the
+  // drawing buffer from its ACTUAL rendered size — never write inline sizes
   dpr=Math.min(2,window.devicePixelRatio||1);
-  const r=canvas.getBoundingClientRect(), de=document.documentElement;
-  const cw=Math.max(1,Math.round(Math.max(r.width,innerWidth||0,de.clientWidth||0)));
-  const ch=Math.max(1,Math.round(Math.max(r.height,innerHeight||0,de.clientHeight||0)));
-  if(Math.abs(r.width-cw)>1||Math.abs(r.height-ch)>1){
-    canvas.style.width=cw+'px'; canvas.style.height=ch+'px';}
+  const r=canvas.getBoundingClientRect();
+  const cw=Math.max(1,Math.round(r.width)), ch=Math.max(1,Math.round(r.height));
   SW=Math.floor(cw*dpr); SH=Math.floor(ch*dpr);
   canvas.width=SW; canvas.height=SH;
   VW=Math.round(Math.min(580,Math.max(380,VH*(SW/SH))));
