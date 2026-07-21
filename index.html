@@ -326,6 +326,7 @@ function drawChar(cx,fy,spec,dir,frame,moving,fx){
   drawHead(P,spec,dir,OL,top,cx,mir,fx,0);
   drawAcc(P,spec,dir,OL);
   if(hurt)drawStars(cx,top-8,frame);
+  if(fx.angry>0)drawAnger(cx,top,frame);
 }
 
 function drawHead(P,spec,dir,OL,top,cx,mir,fx,dy){
@@ -477,6 +478,14 @@ function drawStars(cx,ty,frame){
   for(let i=0;i<3;i++){ const a=frame*0.15+i*2.09;
     sc.fillRect(cx+Math.cos(a)*11-1, ty+Math.sin(a)*4-1, 3,3); }
 }
+function drawAnger(cx,ty,frame){ // pulsing manga anger vein
+  const p=0.55+0.45*Math.sin(frame*0.35), x=cx+9, y=ty-4;
+  sc.strokeStyle='rgba(255,70,70,'+p.toFixed(2)+')'; sc.lineWidth=2;
+  sc.beginPath();
+  sc.moveTo(x-4,y-1);sc.lineTo(x+1,y-1); sc.moveTo(x-1,y-4);sc.lineTo(x-1,y+1);
+  sc.moveTo(x+1,y+1);sc.lineTo(x+5,y+1); sc.moveTo(x+3,y-2);sc.lineTo(x+3,y+3);
+  sc.stroke();
+}
 // sword slash arc for any entity with fx.atk (player + Sensi's practice)
 function drawSlash(e){
   const t=e.atk, p=1-t/16;
@@ -544,10 +553,11 @@ function layoutRooms(){
     colliders:[
       {x:W*0.08,y:WALL+2,w:W*0.32,h:12},       // library shelves base
       {x:W*0.13,y:118,w:W*0.14,h:16},          // reading desk
-      {x:W*0.50,y:WALL+2,w:W*0.33,h:16},       // PC desk
-      {x:W*0.13,y:184,w:W*0.20,h:5},           // pen fence (front)
-      {x:W*0.125,y:184,w:6,h:VH-190},          // pen fence (left)
-      {x:W*0.325,y:184,w:6,h:VH-190},          // pen fence (right)
+      {x:W*0.40,y:WALL+2,w:W*0.20,h:16},       // Cyber's rig desk (top center)
+      {x:W*0.64,y:WALL+2,w:W*0.21,h:16},       // Quant's compact PC desk
+      {x:W*0.16,y:184,w:W*0.19,h:5},           // pen fence (front)
+      {x:W*0.155,y:184,w:6,h:VH-190},          // pen fence (left)
+      {x:W*0.35,y:184,w:6,h:VH-190},           // pen fence (right)
       {x:W*0.72,y:VH-38,w:34,h:16},            // crates
     ],
   };
@@ -832,37 +842,54 @@ function drawWorkers(){
   R(rd.x+4,rd.y+rd.h-4,4,8,'#241708'); R(rd.x+rd.w-8,rd.y+rd.h-4,4,8,'#241708');
   R(rd.x+rd.w*0.3,rd.y-10,14,6,'#e8e0c8'); R(rd.x+rd.w*0.3+6,rd.y-10,2,6,'#8a2a2a');
   candle(rd.x+rd.w*0.75,rd.y-6,41);
-  // --- PC corner (right): monitor with scrolling code, keyboard, server tower ---
-  const pd=rooms.workers.colliders[2];
+  // --- Cyber's multi-monitor hacker rig (top center) ---
+  const cd=rooms.workers.colliders[2], cmx=cd.x+cd.w/2;
+  R(cd.x,cd.y,cd.w,14,'#4a3a28'); R(cd.x,cd.y,cd.w,3,'#5e4a32');
+  R(cd.x+4,cd.y+12,4,8,'#241708'); R(cd.x+cd.w-8,cd.y+12,4,8,'#241708');
+  R(cmx-17,WALL-46,34,28,'#22262c'); R(cmx-15,WALL-44,30,24,'#0a1420');  // center monitor
+  sc.fillStyle='#4ae08a';
+  for(let r2=0;r2<5;r2++){ const w2=6+(((r2*11+(tick>>3))%4))*5; sc.fillRect(cmx-13,WALL-42+r2*4,w2,2); }
+  R(cmx-42,WALL-38,22,20,'#22262c'); R(cmx-40,WALL-36,18,16,'#081824');  // left monitor: radar
+  sc.strokeStyle='#3ae0b0'; sc.lineWidth=1;
+  sc.beginPath(); sc.arc(cmx-31,WALL-28,7,0,Math.PI*2); sc.stroke();
+  sc.beginPath(); sc.moveTo(cmx-31,WALL-28);
+  sc.lineTo(cmx-31+Math.cos(tick*0.05)*7,WALL-28+Math.sin(tick*0.05)*7); sc.stroke();
+  sc.fillStyle='#7fe0ff'; sc.fillRect(cmx-34,WALL-31,2,2);
+  R(cmx+20,WALL-38,22,20,'#22262c'); R(cmx+22,WALL-36,18,16,'#160f04');  // right monitor: amber feed
+  sc.fillStyle='#ffb84a';
+  for(let r2=0;r2<4;r2++){ const w2=5+(((r2*7+(tick>>4))%3))*4; sc.fillRect(cmx+24,WALL-34+r2*4,w2,2); }
+  R(cmx-12,cd.y+3,24,4,'#2c3038');                                       // keyboard
+  R(cmx-40,WALL-18,60,2,'#14141a');                                      // cabling
+  glowAt(cmx,WALL-30,44,'rgba(90,200,255,1)',0.16);
+  // --- Quant's compact PC (right): monitor + server crammed on one desk ---
+  const pd=rooms.workers.colliders[3];
   R(pd.x,pd.y,pd.w,14,'#5a4226'); R(pd.x,pd.y,pd.w,3,'#6f5433');
   R(pd.x+6,pd.y+12,4,8,'#241708'); R(pd.x+pd.w-10,pd.y+12,4,8,'#241708');
-  const mx=pd.x+pd.w*0.22, my=WALL-38;
-  R(mx-2,my-2,32,26,'#22262c'); R(mx,my,28,22,'#081f2c');               // monitor
+  const mx=pd.x+4, my=WALL-36;
+  R(mx-2,my-2,30,24,'#22262c'); R(mx,my,26,20,'#081f2c');                // monitor
   sc.fillStyle='#3ae0b0';
-  for(let r2=0;r2<4;r2++){ const w2=8+(((r2*13+(tick>>4))%3))*6; sc.fillRect(mx+3,my+3+r2*5,w2,2); }
-  R(mx+11,my+24,8,3,'#22262c'); R(mx+2,my+28,26,3,'#2c3038');           // stand + keyboard
-  glowAt(mx+14,my+11,30,'rgba(60,220,190,1)',0.16);
-  const sx2=pd.x+pd.w*0.68;                                             // server tower
-  R(sx2,WALL-38,18,36,'#1c2026'); R(sx2+2,WALL-34,14,2,'#2c3660');
-  sc.fillStyle=((tick>>4)&1)?'#4ae04a':'#1a5a1a'; sc.fillRect(sx2+3,WALL-28,3,3);
-  sc.fillStyle=((tick>>3)&1)?'#e05a4a':'#5a1a1a'; sc.fillRect(sx2+8,WALL-28,3,3);
-  sc.fillStyle='#2a3040'; sc.fillRect(sx2+3,WALL-22,12,2); sc.fillRect(sx2+3,WALL-18,12,2);
-  R(sx2+18,WALL-8,20,2,'#14141a');                                      // cable
-  // stools
-  R(pd.x+pd.w*0.25,pd.y+22,12,4,'#4a3420'); R(pd.x+pd.w*0.55,pd.y+24,12,4,'#4a3420');
+  for(let r2=0;r2<4;r2++){ const w2=7+(((r2*13+(tick>>4))%3))*5; sc.fillRect(mx+3,my+3+r2*4.5,w2,2); }
+  R(mx+9,my+22,8,3,'#22262c'); R(mx+2,my+26,22,3,'#2c3038');             // stand + keyboard
+  glowAt(mx+13,my+10,26,'rgba(60,220,190,1)',0.15);
+  const sx2=mx+32;                                                        // server tower beside it
+  R(sx2,WALL-36,18,34,'#1c2026'); R(sx2+2,WALL-32,14,2,'#2c3660');
+  sc.fillStyle=((tick>>4)&1)?'#4ae04a':'#1a5a1a'; sc.fillRect(sx2+3,WALL-26,3,3);
+  sc.fillStyle=((tick>>3)&1)?'#e05a4a':'#5a1a1a'; sc.fillRect(sx2+8,WALL-26,3,3);
+  sc.fillStyle='#2a3040'; sc.fillRect(sx2+3,WALL-20,12,2); sc.fillRect(sx2+3,WALL-16,12,2);
+  R(pd.x+pd.w*0.3,pd.y+22,12,4,'#4a3420');                               // stool
   // --- Donkey's pen (bottom, left of center): fence + haystack ---
-  const pf=rooms.workers.colliders[3];
+  const pf=rooms.workers.colliders[4];
   for(let x=pf.x;x<pf.x+pf.w;x+=11){ R(x,178,3,12,'#5a4226'); }
   R(pf.x,181,pf.w,2,'#6f5433'); R(pf.x,186,pf.w,2,'#6f5433');
-  for(const ps2 of [rooms.workers.colliders[4],rooms.workers.colliders[5]]){
+  for(const ps2 of [rooms.workers.colliders[5],rooms.workers.colliders[6]]){
     for(let y=184;y<VH-8;y+=12){ R(ps2.x,y,3,10,'#5a4226'); }
     R(ps2.x+1,184,2,VH-192,'#6f5433'); }
-  sc.fillStyle='#c8a24a'; sc.beginPath(); sc.ellipse(VW*0.18,216,17,9,0,0,Math.PI*2); sc.fill();
-  sc.fillStyle='#e0bc5e'; sc.beginPath(); sc.ellipse(VW*0.17,210,11,6,0,0,Math.PI*2); sc.fill();
-  R(VW*0.155,206,2,4,'#a6841e'); R(VW*0.195,212,3,2,'#a6841e'); R(VW*0.21,204,2,4,'#a6841e');
-  R(VW*0.29,214,10,8,'#5a3a1c'); R(VW*0.29,214,10,2,'#7a5a2c');          // feed bucket
+  sc.fillStyle='#c8a24a'; sc.beginPath(); sc.ellipse(VW*0.21,216,17,9,0,0,Math.PI*2); sc.fill();
+  sc.fillStyle='#e0bc5e'; sc.beginPath(); sc.ellipse(VW*0.20,210,11,6,0,0,Math.PI*2); sc.fill();
+  R(VW*0.185,206,2,4,'#a6841e'); R(VW*0.225,212,3,2,'#a6841e'); R(VW*0.24,204,2,4,'#a6841e');
+  R(VW*0.31,214,10,8,'#5a3a1c'); R(VW*0.31,214,10,2,'#7a5a2c');          // feed bucket
   // crates bottom-right
-  const cr=rooms.workers.colliders[6];
+  const cr=rooms.workers.colliders[7];
   R(cr.x,cr.y-8,16,16,'#5a4226'); R(cr.x+17,cr.y-4,16,12,'#4a3420');
   R(cr.x+2,cr.y-6,12,2,'#6f5433'); R(cr.x+4,cr.y+2,8,2,'#6f5433');
   // lanterns + plants
@@ -892,13 +919,13 @@ const OWNER={findings:'Scholar',numbers:'Quant',route:'Cyber',clean:'Donkey',ver
 const haveAll=()=>ORDER.every(k=>quest[k]);
 
 // ===================== CHARACTERS =====================
-const player={x:200,y:200,dir:'u',f:0,moving:false,atk:0,hurt:0,kx:0,ky:0,quip:null,quipT:0,spec:{
+const player={x:200,y:200,dir:'u',f:0,moving:false,atk:0,hurt:0,inv:0,kx:0,ky:0,quip:null,quipT:0,spec:{
   skin:'#f2c993',hair:'#e8bf5e',hairStyle:'hero',hat:'cap',hatCol:'#2f9a3a',
   robe:'#2f9a3a',robeHi:'#54c25e',robeShade:'#1f6f28',long:false,
   pants:'#c8a06a',boots:'#5a3a1a',belt:'#7a5320',trim:'#ffe08a',acc:'sword',outline:'#221a12'}};
 function mk(name,role,rm,fx,fy,voice,spec,script,extra){
   return Object.assign({name,role,room:rm,fx,fy,x:0,y:fy,dir:'d',f:Math.random()*99|0,voice,spec,script,
-    hurt:0,kx:0,ky:0,quip:null,quipT:0,atk:0},extra||{});}
+    hurt:0,kx:0,ky:0,quip:null,quipT:0,atk:0,angry:0,aggro:0,moving:false},extra||{});}
 const npcs=[
   mk('Sensi','The Swordmaster','dojo',0.5,152,180,{
     skin:'#e6b98e',hair:'#171515',hairStyle:'topknot',
@@ -910,8 +937,8 @@ const npcs=[
     :{lines:["Why are you here?",
       "The directive is yours. I am drawn only when it breaks. It has not broken.",
       "Motion is not progress. Finish the work. Straight back."],grant:null},
-    {parry:true,quips:["Too slow.","Again.","Undisciplined."]}),
-  mk('Scholar','The Sage','workers',0.22,142,360,{
+    {parry:true,quips:["So be it. Defend yourself.","You chose this.","Undisciplined. Come."]}),
+  mk('Scholar','The Sage','workers',0.26,142,360,{
     skin:'#eab98a',hair:'#5a3d20',hairStyle:'short',glasses:true,
     robe:'#2f8f86',robeHi:'#43b0a0',robeShade:'#1e5f58',long:true,trim:'#ffe08a',
     boots:'#3a2a18',acc:'book',outline:'#16302e'},
@@ -932,7 +959,7 @@ const npcs=[
         "My verdict is yours, Link. Don't make me regret the ink."],grant:'verdict'};
       return{lines:["Already signed. Go trouble Panda if you're restless."],grant:null};},
     {quips:["Noted. FOREVER.","Adding this to my verdict."]}),
-  mk('Cyber','The Pathfinder','workers',0.75,136,280,{
+  mk('Cyber','The Pathfinder','workers',0.50,120,280,{
     skin:'#e0a878',hair:'#22262c',hairStyle:'short',cyborg:true,circuit:true,armR:'#aab4c0',
     robe:'#2a6ea0',robeHi:'#3f95c8',robeShade:'#1c4c70',long:true,trim:'#63e0ff',
     boots:'#183048',acc:'map',accCol:'#efe4c6',outline:'#12324a'},
@@ -941,7 +968,7 @@ const npcs=[
       "Here's the way through. And the northern pass still wants scouting."],grant:'route'}
     :{lines:["The map is yours, Link. Fair winds."],grant:null},
     {quips:["Recalculating our friendship…","Hostile terrain detected: YOU."]}),
-  mk('Quant','The Reckoner','workers',0.60,126,220,{
+  mk('Quant','The Reckoner','workers',0.72,124,220,{
     skin:'#b8c2cc',hair:'#9aa4b0',hairStyle:'none',robot:true,
     robe:'#9aa4b0',robeHi:'#c5cdd6',robeShade:'#6e7884',long:false,
     pants:'#6e7884',boots:'#3a4048',belt:'#3a4048',trim:'#ffcf5a',acc:'coins',accCol:'#ffcf5a',outline:'#232830'},
@@ -952,7 +979,7 @@ const npcs=[
         "Take them. And do NOT round my decimals."],grant:'numbers'};
       return{lines:["The ledger balances, Link. For tonight."],grant:null};},
     {quips:["That's coming out of YOUR budget.","Invoice issued: one bruise."]}),
-  mk('Donkey','The Tidysmith','workers',0.24,206,150,{donkey:true,outline:'#26222b'},
+  mk('Donkey','The Tidysmith','workers',0.27,206,150,{donkey:true,outline:'#26222b'},
     q=>{ if(!(q.findings&&q.numbers))return{lines:["A clean copy of WHAT, Link? You've handed me an empty tray.",
         "Fetch the findings and the numbers. Then I'll scrub them shining."],grant:null};
       if(!q.clean)return{lines:["Raw material — ahh, my favourite smell.",
@@ -960,7 +987,7 @@ const npcs=[
         "Your clean copy, Link. Humble work. Nobody does it better."],grant:'clean'};
       return{lines:["All spotless, Link. Don't you dare spill on it."],grant:null};},
     {quips:["HEE-HAW?! Watch the blanket!","I carry EVERYTHING here, and this is my thanks?"]}),
-  mk('Panda','The Doubter','hall',0.80,196,260,{big:true,
+  mk('Panda','The Doubter','hall',0.80,182,260,{big:true,
     skin:'#e8c39a',hair:'#f2f2ee',hairStyle:'none',pandaMask:true,
     robe:'#d8dce0',robeHi:'#f0f2f4',robeShade:'#9aa0a6',long:true,trim:'#2a2a2a',
     boots:'#3a3a3e',acc:null,outline:'#2a2c30'},
@@ -989,8 +1016,15 @@ function placeNPCs(){for(const n of npcs)n.x=n.fx*VW;
   player.y=Math.min(Math.max(player.y,WALL+12),VH-8);}
 
 // ===================== DIALOGUE / TALK / ATTACK =====================
-let dlg=null,toastMsg=null,toastT=0,win=false,winT=0,banner=null,flash=0,questVis=true;
+let dlg=null,toastMsg=null,toastT=0,win=false,winT=0,banner=null,flash=0,questVis=true,dmgFlash=0;
 function toggleQuest(){questVis=!questVis;sfxSel();}
+function damagePlayer(fromX,fromY){
+  if(player.inv>0)return;
+  const dx=player.x-fromX, dy=player.y-fromY, d=Math.hypot(dx,dy)||1;
+  player.kx=dx/d*4.5; player.ky=dy/d*4.5;
+  player.hurt=26; player.inv=70; dmgFlash=24;
+  sfxThud(); tone(120,.28,'sawtooth',.06);
+}
 let trans=null; // room fade {t,door}
 const inRoom=()=>npcs.filter(n=>n.room===room);
 function nearest(){let b=null,bd=42;for(const n of inRoom()){
@@ -1000,10 +1034,13 @@ function handleTalk(){ if(!started||trans)return;
   if(dlg){ if(dlg.shown<dlg.full.length){dlg.shown=dlg.full.length;return;}
     dlg.idx++; if(dlg.idx>=dlg.lines.length){closeDlg();return;}
     dlg.full=dlg.lines[dlg.idx];dlg.shown=0;dlg.tt=0;sfxSel();return;}
-  const n=nearest(); if(n){const s=n.script(quest);
+  const n=nearest(); if(n){
+    if(n.parry&&n.aggro>0){say(n,'Fight. Or flee.');return;}   // no talking mid-duel
+    const s=n.script(quest);
     dlg={agent:n,lines:s.lines,grant:s.grant,idx:0,full:s.lines[0],shown:0,tt:0};
     n.dir=player.x<n.x-6?'l':player.x>n.x+6?'r':(player.y<n.y?'u':'d');
     if(n.pose)n.dir='d';
+    if(n.parry)n.angry=150;                                    // being bothered annoys the master
     sfxSel();}}
 function closeDlg(){ const g=dlg?dlg.grant:null; dlg=null;
   if(g&&!quest[g]){ quest[g]=true;
@@ -1020,9 +1057,19 @@ function resolveHit(){
     const dist=Math.hypot(dx,dy);
     if(dist>48)continue;
     if(dx*fv[0]+dy*fv[1]<-6)continue;
-    if(n.parry){ sfxParry(); say(n,n.quips[Math.random()*n.quips.length|0]);
-      for(let i=0;i<8;i++)spawnPart(n.x,n.y-22,(Math.random()-.5)*2,(Math.random()-.5)*2,24,'#cfe6ff',2);
-      player.kx=-fv[0]*3.4; player.ky=-fv[1]*3.4; player.atk=0; continue;}
+    if(n.parry){
+      if(n.aggro>0){ // mid-fight: your hits land now
+        sfxThud(); n.hurt=30; n.kx=fv[0]*1.8; n.ky=fv[1]*1.8;
+        say(n,["Good.","Again!","Sharper!"][Math.random()*3|0]);
+        n.aggro=Math.max(n.aggro,300);
+        for(let i=0;i<7;i++)spawnPart(n.x,n.y-20,(Math.random()-.5)*1.8,-Math.random()*1.2,28,'#ffb43a',2);
+      } else { // first strike: parried, and now you've done it
+        sfxParry(); say(n,n.quips[Math.random()*n.quips.length|0]);
+        for(let i=0;i<8;i++)spawnPart(n.x,n.y-22,(Math.random()-.5)*2,(Math.random()-.5)*2,24,'#cfe6ff',2);
+        player.kx=-fv[0]*3.4; player.ky=-fv[1]*3.4; player.atk=0;
+        n.aggro=600; n.angry=140;
+      }
+      continue;}
     if(n.divine){ sfxDivine(); say(n,n.quips[Math.random()*n.quips.length|0]);
       flash=18; player.kx=-fv[0]*5; player.ky=-fv[1]*5; player.hurt=50; player.atk=0;
       for(let i=0;i<20;i++)spawnPart(player.x,player.y-20,(Math.random()-.5)*2.4,(Math.random()-.5)*2.4,40,'#ffe680',2);
@@ -1061,6 +1108,7 @@ function update(){
   // player
   if(started&&!dlg&&!win){
     let [mx,my]=moveAxes();
+    if(player.inv>0)player.inv--;
     if(player.hurt>0){mx=0;my=0;player.hurt--;}
     if(player.atk>0){player.atk--; if(player.atk===9)resolveHit(); mx*=0.4;my*=0.4;}
     const sp=1.55;
@@ -1091,8 +1139,28 @@ function update(){
       if(nx>14&&nx<VW-14)n.x=nx; if(ny>WALL+12&&ny<VH-8)n.y=ny;
       n.kx*=0.8;n.ky*=0.8;}
     if(n.atk>0)n.atk--;
-    if(n.parry&&n.room===room&&!dlg&&n.hurt===0&&n.atk===0&&(tick+120)%260===0){
-      n.atk=16; n.dir=['d','l','u','r'][(tick/260|0)%4]; }   // Sensi's kata practice
+    if(n.angry>0)n.angry--;
+    if(n.parry){ // Sensi: calm master — until provoked
+      if(n.aggro>0){ n.aggro--;
+        if(n.room===room&&!dlg&&!win&&!trans){
+          const dx=player.x-n.x, dy=player.y-n.y, d=Math.hypot(dx,dy)||1;
+          if(d>26&&n.atk===0&&n.hurt===0){ const sp2=1.12;   // chase — a touch slower than Link
+            const nx=n.x+dx/d*sp2, ny=Math.min(n.y+dy/d*sp2,VH-10);
+            if(!blockedAt(nx,n.y))n.x=nx; if(!blockedAt(n.x,ny))n.y=ny;
+            n.moving=true;
+            n.dir=Math.abs(dx)>Math.abs(dy)?(dx<0?'l':'r'):(dy<0?'u':'d');
+          } else n.moving=false;
+          if(d<30&&n.atk===0&&n.hurt===0&&player.inv<=0){ n.atk=16; sfxSwing(); }
+          if(n.atk===9&&Math.hypot(player.x-n.x,player.y-n.y)<38)damagePlayer(n.x,n.y);
+        } else n.moving=false;
+        if(n.aggro===0){ say(n,'Discipline restored.'); n.moving=false; }
+      } else { // walk back to his spot, then face forward
+        const hx=n.fx*VW, dx=hx-n.x, dy=n.fy-n.y, d=Math.hypot(dx,dy);
+        if(d>2){ n.x+=dx/d*0.8; n.y+=dy/d*0.8; n.moving=true;
+          n.dir=Math.abs(dx)>Math.abs(dy)?(dx<0?'l':'r'):(dy<0?'u':'d'); }
+        else if(n.moving){ n.moving=false; n.dir='d'; }
+      }
+    }
   }
 }
 // ===================== HUD =====================
@@ -1526,15 +1594,23 @@ function render(){
   drawRoomBG();
   const ents=[...inRoom(),player].sort((a,b)=>a.y-b.y);
   for(const e of ents){
-    const fx={hurt:e.hurt,pose:e.pose,munch:e.munch,look:e===player?0:Math.sign(player.x-e.x)};
+    if(e===player&&player.inv>0&&((tick>>2)&1))continue;   // hurt-blink
+    const fx={hurt:e.hurt,pose:e.pose,munch:e.munch,look:e===player?0:Math.sign(player.x-e.x),
+      angry:(e.angry||0)+((e.aggro||0)>0?12:0)};
     drawChar(e.x,e.y,e.spec,e.dir,e.f,e.moving||false,fx);
     if(e.atk>0)drawSlash(e);
   }
   drawParts();
   roomLighting();
   ctx.imageSmoothingEnabled=false; ctx.fillStyle='#0d0a14'; ctx.fillRect(0,0,SW,SH);
-  ctx.drawImage(scene,0,0,VW,VH,ox,oy,VW*scale,VH*scale);
+  const shk=dmgFlash>0?Math.round(Math.sin(tick*1.7)*dmgFlash*0.35):0;
+  ctx.drawImage(scene,0,0,VW,VH,ox+shk,oy-Math.abs(shk)/2,VW*scale,VH*scale);
   ctx.imageSmoothingEnabled=true;
+  if(dmgFlash>0){ dmgFlash--;                                  // player-damage vignette
+    const a=dmgFlash/24;
+    const dg=ctx.createRadialGradient(SW/2,SH/2,SH*0.3,SW/2,SH/2,SH*0.8);
+    dg.addColorStop(0,'rgba(200,20,20,0)'); dg.addColorStop(1,'rgba(230,30,30,'+(0.55*a).toFixed(2)+')');
+    ctx.fillStyle=dg; ctx.fillRect(0,0,SW,SH); }
   if(started){ drawTags(); drawHUD(); drawButtons(); drawDialogue(); drawToast(); drawBanner(); }
   if(flash>0){ ctx.globalAlpha=flash/18*0.8; ctx.fillStyle='#fff2c0'; ctx.fillRect(0,0,SW,SH); ctx.globalAlpha=1; flash--; }
   if(trans){ const a=trans.t<15?trans.t/14:(30-trans.t)/16;
