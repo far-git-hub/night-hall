@@ -17,8 +17,9 @@ You play **Link, the Orchestrator**. The Master has retired for the night and le
 | Talk / continue | E, Space or Enter | TALK button |
 | Swing sword | F, X or J | SWORD button |
 | Mute sound | M | ♪ button |
+| Toggle quest scroll | Q | ! button |
 
-Yes, you can hit your own fleet with the sword. They will have opinions about it. Sensi parries. The Goddess... try it and see.
+Yes, you can hit your own fleet with the sword. They will have opinions about it. The Goddess... try it and see. And if you strike Sensi, be ready for a real duel — rumor says a hero who lands five hits earns something the quest log doesn't mention.
 
 ## Under the hood
 
