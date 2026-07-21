@@ -6,10 +6,10 @@
 <title>Hermes — The Night Hall</title>
 <style>
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-  html,body{margin:0;height:100%;background:#0d0a14;overflow:hidden;
+  html,body{margin:0;position:fixed;inset:0;width:100%;height:100%;background:#0d0a14;overflow:hidden;
     font-family:'Trebuchet MS','Segoe UI',system-ui,sans-serif;color:#f4ead2;touch-action:none;
     -webkit-user-select:none;user-select:none;}
-  #c{display:block;width:100vw;height:100vh;background:#0d0a14;}
+  #c{position:fixed;inset:0;width:100%;height:100%;background:#0d0a14;}
   #start{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
     background:radial-gradient(circle at 50% 38%,#2a1e38,#0d0a14 78%);z-index:10;text-align:center;padding:20px;overflow:auto;}
   #start h1{font-size:clamp(34px,8.5vw,64px);letter-spacing:6px;color:#ffd98a;margin:0 0 6px;font-weight:800;
@@ -50,19 +50,26 @@ const VH=240; let VW=426;                       // 16:9-ish virtual res, VW adap
 const scene=document.createElement('canvas'); let sc=scene.getContext('2d');
 let SW=0,SH=0,scale=1,ox=0,oy=0,dpr=1,started=false;
 const isTouch=('ontouchstart' in window)||navigator.maxTouchPoints>0;
+function vpSize(){ // visualViewport beats innerWidth/Height on iOS Safari (toolbar/home-bar quirks)
+  const vv=window.visualViewport;
+  return [Math.round(vv?vv.width:innerWidth), Math.round(vv?vv.height:innerHeight)];
+}
 function resize(){
   dpr=Math.min(2,window.devicePixelRatio||1);
-  SW=Math.floor(innerWidth*dpr); SH=Math.floor(innerHeight*dpr);
-  canvas.width=SW; canvas.height=SH; canvas.style.width=innerWidth+'px'; canvas.style.height=innerHeight+'px';
+  const [cw,ch]=vpSize();
+  SW=Math.floor(cw*dpr); SH=Math.floor(ch*dpr);
+  canvas.width=SW; canvas.height=SH; canvas.style.width=cw+'px'; canvas.style.height=ch+'px';
   VW=Math.round(Math.min(580,Math.max(380,VH*(SW/SH))));
   scene.width=VW; scene.height=VH; sc=scene.getContext('2d'); sc.imageSmoothingEnabled=false;
   scale=Math.max(SW/VW,SH/VH);                  // cover: fill the whole screen, no bars
   ox=(SW-VW*scale)/2; oy=(SH-VH*scale)/2;
   layoutButtons(); layoutRooms();
-  const portrait=innerHeight>innerWidth;
-  document.getElementById('rotate').style.display=(isTouch&&portrait&&started)?'flex':'none';
+  document.getElementById('rotate').style.display=(isTouch&&ch>cw&&started)?'flex':'none';
 }
 addEventListener('resize',resize); addEventListener('orientationchange',()=>setTimeout(resize,250));
+if(window.visualViewport){visualViewport.addEventListener('resize',resize);visualViewport.addEventListener('scroll',resize);}
+setInterval(()=>{const [cw,ch]=vpSize();     // safety net: iOS toolbars show/hide without firing resize
+  if(Math.abs(cw*dpr-SW)>2||Math.abs(ch*dpr-SH)>2)resize();},600);
 
 // ===================== INPUT =====================
 const input={mx:0,my:0,keys:{}};
@@ -152,18 +159,36 @@ const MELODY={0:['e5',5],6:['g5',2],8:['a5',4],12:['g5',2],14:['e5',2],16:['d5',
 let mstep=0;
 function musicStep(){
   if(muted||!AC){mstep=(mstep+1)%64;return;}
-  const bar=(mstep/8)|0, sub=mstep%8, ch=CHORDS[bar];
-  // harp
-  tone(NF(ch[ARP[sub]]),STEP*2.2,'sine',.045);
-  // bass
-  if(sub===0)tone(NF(ch[0]),STEP*7.5,'sine',.075);
-  if(sub===4)tone(NF(ch[0])*1.5,STEP*3.4,'sine',.03);
-  // lead
-  const m=MELODY[mstep];
-  if(m)tone(NF(m[0]),STEP*m[1]*0.95,'triangle',.07,0,true);
-  // rare sparkle
-  if(Math.random()<.02)tone(NF(['e6','g6','c6','d6'][Math.random()*4|0]),.5,'sine',.018);
+  if(room==='dojo')stepDojo(); else if(room==='throne')stepThrone(); else stepHall();
   mstep=(mstep+1)%64;
+}
+// hall: gentle nocturne
+function stepHall(){
+  const bar=(mstep/8)|0, sub=mstep%8, ch=CHORDS[bar];
+  tone(NF(ch[ARP[sub]]),STEP*2.2,'sine',.045);                      // harp
+  if(sub===0)tone(NF(ch[0]),STEP*7.5,'sine',.075);                  // bass
+  if(sub===4)tone(NF(ch[0])*1.5,STEP*3.4,'sine',.03);
+  const m=MELODY[mstep];
+  if(m)tone(NF(m[0]),STEP*m[1]*0.95,'triangle',.07,0,true);         // lead
+  if(Math.random()<.02)tone(NF(['e6','g6','c6','d6'][Math.random()*4|0]),.5,'sine',.018);
+}
+// dojo: koto plucks on the hirajoshi scale, taiko heartbeat, low drone
+const KOTO={0:'e4',2:'g4',4:'b4',6:'c5',10:'b4',12:'g4',16:'e4',22:'f#4',24:'g4',28:'e4',
+  32:'b4',34:'c5',36:'e5',40:'b4',44:'c5',46:'b4',48:'g4',52:'f#4',56:'e4',62:'b3'};
+function stepDojo(){
+  const n=KOTO[mstep];
+  if(n){ tone(NF(n),.42,'triangle',.065); tone(NF(n)*2,.15,'sine',.022); }   // pluck + string shimmer
+  if(mstep===0||mstep===32)tone(NF('e2'),STEP*15,'sine',.05);                // drone
+  if(mstep===16||mstep===48){ noise(.1,.06,220); tone(56,.15,'sine',.1); }   // taiko
+  if(mstep===30||mstep===58)tone(NF('b5'),1.1,'sine',.018,0,true);           // distant flute
+}
+// throne: serene temple — slow sine pads, sparse bells, deep om
+const PADS=[['c4','e4','g4'],['a3','c4','e4'],['f3','a3','c4'],['g3','b3','d4']];
+const BELLS={4:'g5',20:'c6',36:'e6',52:'d6'};
+function stepThrone(){
+  if(mstep%16===0){ const ch=PADS[(mstep/16)|0]; for(const n of ch)tone(NF(n),STEP*15,'sine',.034); }
+  if(mstep===0)tone(NF('c2'),STEP*30,'sine',.05);
+  const b=BELLS[mstep]; if(b)tone(NF(b),2.4,'sine',.028,0,true);
 }
 let room='hall';
 function ambience(){
@@ -199,6 +224,8 @@ function drawChar(cx,fy,spec,dir,frame,moving,fx){
   cx=Math.round(cx); fy=Math.round(fy);
   const hurt=fx.hurt>0, mir=(dir==='l');
   if(hurt)cx+=Math.round(Math.sin(fx.hurt*1.6)*2);
+  if(spec.donkey){drawDonkey(cx,fy,dir,frame,moving,fx);return;}
+  if(spec.big&&spec.pandaMask){drawPandaBig(cx,fy,frame,fx);return;}
   const pose=fx.pose||'stand';
   const H=pose==='sit'?19:24;
   let top=fy-H*S;
@@ -265,11 +292,15 @@ function drawChar(cx,fy,spec,dir,frame,moving,fx){
   if(spec.collar&&!back&&!side){P(-2,9,4,3,spec.collar); P(-1,9,2,5,spec.robeShade);}
   if(spec.belt){P(txo+1,15,tw-2,2,spec.belt); if(!back)P(-1,15,2,2,spec.trim||spec.belt);}
   else if(spec.trim){P(txo+1,15,tw-2,1,spec.trim);}
+  if(spec.robot&&!back&&!side){ P(-1,11,2,2,'#ffcf5a');                        // coin emblem
+    P(txo+2,10,1,1,((tick>>4)&1)?'#63e0ff':'#2a5a6a');                         // blinking panel lights
+    P(txo+2,13,1,1,((tick>>3)&1)?'#ff8a4a':'#7a4a2a'); }
+  if(spec.circuit&&!back&&!side){ P(txo+2,10,1,5,'#63e0ff'); P(txo+2,14,3,1,'#63e0ff'); }
   // arms
   const aw=moving?st:0;
   if(side){ P(-2,10,4,7,OL); P(-1,10+aw,2,6,spec.robe); if(!spec.long)P(-1,15+aw,2,2,spec.skin); }
-  else { P(txo-2,9,3,8,OL); P(txo-1,10-aw,2,6,spec.robe);
-         P(txo+tw-1,9,3,8,OL); P(txo+tw,10+aw,2,6,spec.robe);
+  else { P(txo-2,9,3,8,OL); P(txo-1,10-aw,2,6,spec.armL||spec.robe);
+         P(txo+tw-1,9,3,8,OL); P(txo+tw,10+aw,2,6,spec.armR||spec.robe);
          if(!spec.long){P(txo-1,15-aw,2,2,spec.skin); P(txo+tw,15+aw,2,2,spec.skin);} }
   drawHead(P,spec,dir,OL,top,cx,mir,fx,0);
   drawAcc(P,spec,dir,OL);
@@ -281,6 +312,17 @@ function drawHead(P,spec,dir,OL,top,cx,mir,fx,dy){
   const y=o=>o+dy;
   // skull
   P(-5,y(0),10,9,OL); P(-4,y(1),8,7,spec.skin);
+  if(spec.robot){ // brushed-steel head, antenna, glowing eyes
+    P(-4,y(1),8,7,'#b8c2cc'); P(-4,y(1),8,1,'#dde4ea'); P(-4,y(7),8,1,'#8e98a4');
+    P(-1,y(-2),1,3,'#8e98a4'); P(-2,y(-4),3,2,((tick>>4)&1)?'#ffb43a':'#7a4a20');
+    P(-5,y(3),1,2,'#8e98a4'); P(4,y(3),1,2,'#8e98a4');
+    if(!back){
+      if(fx.hurt>0){P(-3,y(3),2,2,'#ff5252');P(1,y(3),2,2,'#ff5252');}
+      else{P(-3,y(3),2,2,'#63e0ff');P(-3,y(3),1,1,'#bff2ff');P(1,y(3),2,2,'#63e0ff');P(1,y(3),1,1,'#bff2ff');}
+      P(-2,y(6),4,1,'#5a626e'); P(-1,y(7),2,1,'#454c56');
+    }
+    return;
+  }
   if(spec.pandaMask){ // panda head replaces everything
     P(-4,y(1),8,7,'#f4f2ea');
     P(-6,y(-1),3,3,'#26262a'); P(3,y(-1),3,3,'#26262a');                    // ears
@@ -300,7 +342,10 @@ function drawHead(P,spec,dir,OL,top,cx,mir,fx,dy){
     if(spec.hairStyle==='hero'){P(-4,y(0),8,3,spec.hair);P(-4,y(1),1,4,spec.hair);P(3,y(1),1,3,spec.hair);}
     else if(spec.hairStyle==='topknot'){P(-4,y(0),8,3,spec.hair);P(-4,y(1),1,5,spec.hair);P(3,y(1),1,5,spec.hair);
       P(-1,y(-3),3,3,OL);P(-1,y(-3),2,2,spec.hair);}
-    else if(spec.hairStyle==='long'){P(-4,y(0),8,3,spec.hair);P(-5,y(1),1,11,spec.hair);P(4,y(1),1,11,spec.hair);}
+    else if(spec.hairStyle==='long'){P(-4,y(0),8,3,spec.hair);P(-5,y(1),1,11,spec.hair);P(4,y(1),1,11,spec.hair);
+      if(spec.fair){P(-6,y(2),1,12,spec.hair);P(5,y(2),1,12,spec.hair);         // fuller flowing falls
+        P(-6,y(13),2,3,spec.hair);P(4,y(13),2,3,spec.hair);                     // waves at the ends
+        P(-2,y(0),4,1,'#fff6c8');}}                                             // shine
     else if(spec.hairStyle==='short'){P(-4,y(0),8,3,spec.hair);P(-4,y(1),1,3,spec.hair);P(3,y(1),1,2,spec.hair);}
   }
   if(spec.bandana)P(-4,y(1),8,2,spec.bandana);
@@ -308,10 +353,24 @@ function drawHead(P,spec,dir,OL,top,cx,mir,fx,dy){
     P(4,y(1),2,2,spec.hatCol);P(5,y(2),2,2,shade(spec.hatCol,.8));}
   if(spec.hat==='crown'){P(-4,y(-3),8,3,OL);P(-3,y(-3),6,2,spec.hatCol);
     P(-3,y(-5),1,2,spec.hatCol);P(-1,y(-6),2,3,spec.hatCol);P(2,y(-5),1,2,spec.hatCol);P(-1,y(-4),2,1,'#ff5a7a');}
+  if(spec.hat==='tiara'){P(-4,y(-1),8,1,spec.hatCol);P(-3,y(-2),1,1,spec.hatCol);P(2,y(-2),1,1,spec.hatCol);
+    P(-1,y(-3),2,2,spec.hatCol);P(-1,y(-2),2,1,'#7ae0ff');}
   // face
   if(!back&&!spec.hood){
     const eye=spec.glowEye||'#221822';
     if(fx.hurt>0){ P(-3,y(4),2,2,'#e05252'); P(1,y(4),2,2,'#e05252'); P(-1,y(7),2,1,'#a04040'); }
+    else if(spec.cyborg&&!side){ // half-metal face, glowing implant eye
+      P(1,y(1),3,7,'#aab4c0'); P(1,y(1),3,1,'#c8d2dc'); P(3,y(3),1,5,'#7e8894');
+      P(-3,y(4),1,2,eye);
+      P(1,y(4),2,2,((tick>>3)&1)?'#ff5a3a':'#ffa03a'); P(1,y(4),1,1,'#ffd8a8');
+      P(1,y(6),3,1,'#7e8894'); P(-2,y(7),2,1,'rgba(40,20,30,0.4)');
+    }
+    else if(spec.fair&&!side){ // young, gentle face: lashes, soft eyes, blush, lips
+      P(-4,y(3),2,1,'#4a3320'); P(2,y(3),2,1,'#4a3320');
+      P(-3,y(4),1,2,'#3a2a1a'); P(2,y(4),1,2,'#3a2a1a');
+      P(-4,y(6),1,1,'rgba(240,120,140,0.55)'); P(3,y(6),1,1,'rgba(240,120,140,0.55)');
+      P(-1,y(7),2,1,'#d8607a');
+    }
     else if(side){ P(0,y(4),1,2,eye); P(3,y(5),1,1,shade(spec.skin,.8)); }
     else { P(-3,y(4),1,2,eye); P(2,y(4),1,2,eye);
       P(-4,y(6),1,1,'rgba(220,90,90,0.35)'); P(3,y(6),1,1,'rgba(220,90,90,0.35)');
@@ -334,6 +393,63 @@ function drawAcc(P,spec,dir,OL){
     case 'coins': P(-8,13,3,4,'#6a4a2a'); P(-7,12,1,1,'#ffcf5a'); P(5,11,2,2,c); break;
     case 'broom': P(7,2,1,20,'#6a4a2a'); P(5,20,5,3,'#c8a24a'); P(5,22,5,2,'#a6841e'); break;
   }
+}
+// a literal donkey (the Tidysmith), with his tidy saddle blanket
+function drawDonkey(cx,fy,dir,frame,moving,fx){
+  const mir=(dir==='l');
+  const P=(ux,uy,w,h,c)=>{sc.fillStyle=c;const x=mir?cx-(ux+w)*S:cx+ux*S;sc.fillRect(x,fy-36+uy*S,w*S,h*S);};
+  const B='#8d8790',Bd='#6e6873',M='#4a4550',Mu='#c9c4cc',OL2='#26222b';
+  sc.fillStyle='rgba(0,0,0,0.3)';sc.beginPath();sc.ellipse(cx,fy+2,13,3,0,0,Math.PI*2);sc.fill();
+  const st=moving?(((frame>>3)&1)?1:-1):0, hurt=fx.hurt>0;
+  const tw=Math.round(Math.sin(frame*0.06));                 // idle tail/ear twitch
+  if(dir==='l'||dir==='r'){
+    P(-8+st,12,2,6,Bd); P(-4-st,12,2,6,Bd); P(3+st,12,2,6,Bd); P(7-st,12,2,6,Bd);
+    P(-8+st,16,2,2,M); P(7-st,16,2,2,M);                     // hooves
+    P(-10,5,17,8,OL2); P(-9,6,15,6,B); P(-9,10,15,2,Bd);     // body
+    P(-6,5,7,5,'#7a3a2a'); P(-6,5,7,1,'#d8c69a'); P(-6,8,7,1,'#d8c69a'); // saddle blanket
+    P(-12,5+tw,2,5,Bd); P(-12,9+tw,2,2,M);                   // tail
+    P(4,0,5,7,OL2); P(5,1,4,5,B);                            // neck
+    P(7,-1,7,6,OL2); P(8,0,5,4,B); P(11,1,3,3,Mu); P(12,2,1,1,'#5a4550'); // head + muzzle
+    P(5,-5,2,5+tw,OL2); P(5,-4,1,3,B); P(8,-6,2,6,OL2); P(8,-5,1,4,Bd);   // long ears
+    P(5,-1,2,7,M);                                           // mane
+    if(hurt)P(9,0,2,2,'#e05252'); else P(9,0,1,2,'#221822');
+  } else {
+    P(-6,4,12,10,OL2); P(-5,5,10,8,B); P(-5,11,10,2,Bd);     // body
+    P(-5,13,3,5,Bd); P(2,13,3,5,Bd); P(-5,16,3,2,M); P(2,16,3,2,M);
+    P(-3,5,6,4,'#7a3a2a'); P(-3,5,6,1,'#d8c69a');            // blanket
+    P(-5,-5,3,8,OL2); P(-4,-4,1,5,B); P(2,-5,3,8,OL2); P(3,-4,1,5,Bd);   // ears
+    P(-4,-2,8,9,OL2); P(-3,-1,6,7,B);                        // head
+    if(dir==='d'){ P(-3,3,6,4,Mu);
+      if(hurt){P(-3,0,2,2,'#e05252');P(1,0,2,2,'#e05252');}
+      else{P(-3,0,1,2,'#221822');P(2,0,1,2,'#221822');}
+      P(-2,5,1,1,'#5a4550'); P(1,5,1,1,'#5a4550'); }
+    else P(-3,-1,6,3,M);
+  }
+  if(hurt)drawStars(cx,fy-42,frame);
+}
+// big fat Panda, mid-feast
+function drawPandaBig(cx,fy,frame,fx){
+  const P=(ux,uy,w,h,c)=>{sc.fillStyle=c;sc.fillRect(cx+ux*S,fy-52+uy*S,w*S,h*S);};
+  const W2='#f2f0e8',Wd='#d8d4cc',K='#2b2b30',OL2='#1c1a20';
+  sc.fillStyle='rgba(0,0,0,0.32)';sc.beginPath();sc.ellipse(cx,fy+2,18,4,0,0,Math.PI*2);sc.fill();
+  const b=Math.round(Math.sin(frame*0.045));                 // slow breathing
+  if(fx.hurt>0)cx+=0;                                        // shake handled by caller
+  P(-11,21,7,5,K); P(4,21,7,5,K); P(-11,24,7,2,'#3a3a40'); P(4,24,7,2,'#3a3a40'); // sprawled legs
+  P(-10,8+b,20,15,OL2); P(-9,9+b,18,13,W2); P(-9,17+b,18,5,Wd);                   // big round body
+  P(-5,11+b,10,10,'#fbfaf5');                                                     // belly
+  P(-13,10+b,4,9,K); P(-13,17+b,3,2,'#3a3a40');                                   // left arm on belly
+  const mun=((frame>>4)&1);
+  if(mun){ P(6,3+b,4,8,K); P(6,2+b,3,2,'#c8912e'); }                              // food to mouth
+  else   { P(9,12+b,4,8,K); P(9,18+b,3,2,'#c8912e'); }
+  P(-8,-5+b,16,13,OL2); P(-7,-4+b,14,11,W2);                                      // big head
+  P(-9,-7+b,5,5,K); P(4,-7+b,5,5,K);                                              // ears
+  P(-5,-1+b,4,5,K); P(2,-1+b,4,5,K);                                              // eye patches
+  const lk=fx.look||0;
+  if(fx.hurt>0){P(-4,0+b,2,2,'#e05252');P(3,0+b,2,2,'#e05252');}
+  else{P(-4+(lk>0?1:0),0+b,1,2,'#111');P(3+(lk>0?1:0),0+b,1,2,'#111');}
+  P(-1,3+b,3,2,K); P(-1,5+b,2,1,'#5a3a3a');                                       // nose + mouth
+  if(!mun&&Math.random()<.04)spawnPart(cx+10,fy-28,(Math.random()-.5)*.4,.35,26,'#c8912e',1); // crumbs
+  if(fx.hurt>0)drawStars(cx,fy-58,frame);
 }
 function drawStars(cx,ty,frame){
   sc.fillStyle='#ffe680';
@@ -377,7 +493,7 @@ function layoutRooms(){
     exit:null,
     colliders:[
       {x:W*0.30,y:148,w:W*0.32,h:24},          // feast table
-      {x:W*0.84,y:210,w:W*0.13,h:16},          // panda's corner table
+      {x:W*0.72,y:210,w:W*0.16,h:16},          // panda's feast table
       {x:8,y:VH-46,w:34,h:18},                 // barrels
       {x:W*0.78,y:WALL+2,w:W*0.13,h:14},       // hearth
     ],
@@ -658,8 +774,8 @@ const npcs=[
       return{lines:["Already signed. Go trouble Panda if you're restless."],grant:null};},
     {quips:["Noted. FOREVER.","Adding this to my verdict."]}),
   mk('Cyber','The Pathfinder','hall',0.68,126,280,{
-    skin:'#e0a878',hair:'#2a2a2a',hairStyle:'none',hood:'#1c5070',goggles:true,
-    robe:'#2a6ea0',robeHi:'#3f95c8',robeShade:'#1c4c70',long:true,trim:'#bfe6ff',
+    skin:'#e0a878',hair:'#22262c',hairStyle:'short',cyborg:true,circuit:true,armR:'#aab4c0',
+    robe:'#2a6ea0',robeHi:'#3f95c8',robeShade:'#1c4c70',long:true,trim:'#63e0ff',
     boots:'#183048',acc:'map',accCol:'#efe4c6',outline:'#12324a'},
     q=>!q.route?{lines:["The route? Charted and waiting, Link.",
       "Read-only, mind — I scout, I never book without the Master's word.",
@@ -667,9 +783,9 @@ const npcs=[
     :{lines:["The map is yours, Link. Fair winds."],grant:null},
     {quips:["Recalculating our friendship…","Hostile terrain detected: YOU."]}),
   mk('Quant','The Reckoner','hall',0.56,194,220,{
-    skin:'#e8b483',hair:'#3a2a18',hairStyle:'short',
-    robe:'#256a3a',robeHi:'#3a8f52',robeShade:'#173d26',long:false,vest:'#c9a24a',
-    pants:'#3a2f22',boots:'#2a1f14',belt:'#8a6a2a',trim:'#ffcf5a',acc:'coins',accCol:'#ffcf5a',outline:'#122a1a'},
+    skin:'#b8c2cc',hair:'#9aa4b0',hairStyle:'none',robot:true,
+    robe:'#9aa4b0',robeHi:'#c5cdd6',robeShade:'#6e7884',long:false,
+    pants:'#6e7884',boots:'#3a4048',belt:'#3a4048',trim:'#ffcf5a',acc:'coins',accCol:'#ffcf5a',outline:'#232830'},
     q=>{ if(!q.findings)return{lines:["Numbers from nothing? Never, Link.",
         "Bring me Scholar's findings first. I reckon facts, not hopes."],grant:null};
       if(!q.numbers)return{lines:["Ah — the findings. NOW the abacus sings.",
@@ -677,18 +793,15 @@ const npcs=[
         "Take them. And do NOT round my decimals."],grant:'numbers'};
       return{lines:["The ledger balances, Link. For tonight."],grant:null};},
     {quips:["That's coming out of YOUR budget.","Invoice issued: one bruise."]}),
-  mk('Donkey','The Tidysmith','hall',0.40,206,150,{
-    skin:'#dca878',hair:'#2a2018',hairStyle:'short',bandana:'#9a5a3a',
-    robe:'#8a8478',robeHi:'#a6a094',robeShade:'#5f5a50',long:false,apron:'#6a4a2a',
-    pants:'#4a3d29',boots:'#2a2018',belt:'#4a3320',trim:'#d8c69a',acc:'broom',outline:'#221c14'},
+  mk('Donkey','The Tidysmith','hall',0.40,206,150,{donkey:true,outline:'#26222b'},
     q=>{ if(!(q.findings&&q.numbers))return{lines:["A clean copy of WHAT, Link? You've handed me an empty tray.",
         "Fetch the findings and the numbers. Then I'll scrub them shining."],grant:null};
       if(!q.clean)return{lines:["Raw material — ahh, my favourite smell.",
         "Sort... scrub... align... there.",
         "Your clean copy, Link. Humble work. Nobody does it better."],grant:'clean'};
       return{lines:["All spotless, Link. Don't you dare spill on it."],grant:null};},
-    {quips:["I JUST pressed this apron!","Sweeping YOU up next."]}),
-  mk('Panda','The Doubter','hall',0.895,206,260,{
+    {quips:["HEE-HAW?! Watch the blanket!","I carry EVERYTHING here, and this is my thanks?"]}),
+  mk('Panda','The Doubter','hall',0.80,206,260,{big:true,
     skin:'#e8c39a',hair:'#f2f2ee',hairStyle:'none',pandaMask:true,
     robe:'#d8dce0',robeHi:'#f0f2f4',robeShade:'#9aa0a6',long:true,trim:'#2a2a2a',
     boots:'#3a3a3e',acc:null,outline:'#2a2c30'},
@@ -697,7 +810,7 @@ const npcs=[
       "The roast is excellent, by the way. Go run your errand — I'll be here. Watching. Always watching."],grant:null}),
     {pose:'sit',munch:true,quips:["…Suspicion confirmed.","Attacking the witness. Bold.","(munch) Rude."]}),
   mk('Goddess','The Sovereign','throne',0.5,108,200,{
-    skin:'#f6d5a8',hair:'#fff0b0',hairStyle:'long',hat:'crown',hatCol:'#ffd94a',
+    skin:'#f8dcb4',hair:'#ffe9a0',hairStyle:'long',fair:true,hat:'tiara',hatCol:'#ffd94a',
     robe:'#e6c23a',robeHi:'#ffe988',robeShade:'#b8901e',long:true,trim:'#fff4c0',
     boots:'#b8901e',glow:'rgba(255,210,110,1)',outline:'#7a5a10'},
     q=>{ if(!haveAll())return{lines:["You come to me unready, Link.",
@@ -832,7 +945,7 @@ function drawHUD(){
   if(haveAll()&&!quest.done){ ctx.fillStyle='#ffd98a'; ctx.fillText('▸ To the Throne Room!', pad+F*0.7, pad+lh*(ORDER.length+2)); }
   // interaction prompt
   const n=nearest();
-  if(n&&!dlg&&!win&&!trans){ const sx=ox+n.x*scale, sy=oy+(n.y-(n.pose?42:54)-2+Math.sin(tick*0.12)*2)*scale;
+  if(n&&!dlg&&!win&&!trans){ const sx=ox+n.x*scale, sy=oy+(n.y-(n.spec.big?66:(n.spec.donkey?48:(n.pose?42:54)))-2+Math.sin(tick*0.12)*2)*scale;
     ctx.font='800 '+(F*1.2)+'px Trebuchet MS'; ctx.textAlign='center';
     ctx.strokeStyle='#000'; ctx.lineWidth=Math.max(3,SH*0.006);
     ctx.strokeText('❕',sx,sy); ctx.fillStyle='#ffd98a'; ctx.fillText('❕',sx,sy); ctx.textAlign='left';}
@@ -840,7 +953,7 @@ function drawHUD(){
 function drawTags(){
   const F=Math.max(11,SH*0.026);
   ctx.textAlign='center'; ctx.font='800 '+F+'px Trebuchet MS';
-  for(const n of inRoom()){ const x=ox+n.x*scale, y=oy+(n.y-(n.pose==='sit'?40:(n.pose==='throne'?52:52)))*scale;
+  for(const n of inRoom()){ const x=ox+n.x*scale, y=oy+(n.y-(n.spec.big?62:(n.spec.donkey?44:(n.pose==='sit'?40:52))))*scale;
     ctx.strokeStyle='#000'; ctx.lineWidth=Math.max(2,SH*0.005);
     ctx.fillStyle=n.divine?'#ffe08a':'#e8d8b0';
     ctx.strokeText(n.name,x,y); ctx.fillText(n.name,x,y);
@@ -940,7 +1053,7 @@ function render(){
 function frame(){ update(); render(); requestAnimationFrame(frame); }
 document.getElementById('go').addEventListener('click',()=>{
   document.getElementById('start').style.display='none'; started=true;
-  resize(); player.x=VW*0.5; player.y=VH-40; banner={text:BANNERS.hall,t:170};
+  resize(); player.x=VW*0.47; player.y=VH-20; banner={text:BANNERS.hall,t:170};
   startAudio();
 });
 resize(); frame();
