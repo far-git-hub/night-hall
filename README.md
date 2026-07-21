@@ -1,26 +1,29 @@
 # The Night Hall — A Hermes Fleet Tale
 
-A tiny pixel-art side-scroller that runs entirely in your browser. No install, no downloads, no dependencies — one self-contained HTML file.
+A cozy pixel-art adventure that runs entirely in your browser. No install, no downloads, no dependencies — one self-contained HTML file.
 
-You play **Link, the Orchestrator**. The Master has retired for the night and left one directive to finish before dawn. Cross the firelit medieval hall and gather what the directive needs from the fleet — *the findings, the numbers, the route, a clean copy, and the Critic's verdict* — then carry it all to the Goddess. Some of the fleet would rather argue than help.
+You play **Link, the Orchestrator**. The Master has retired for the night and left one directive to finish before dawn. Wander the firelit **Hearth Hall**, step into the **Dojo** where Sensi trains, and walk the long carpet of the **Throne Room** where the Goddess waits at the center of it all. Gather what the directive needs from the fleet — *the findings, the numbers, the route, a clean copy, and the Critic's verdict* — then lay it all before her. Panda will be in his corner, feasting, watching, doubting.
 
 ## Play
 
-- **Online:** open **https://far-git-hub.github.io/night-hall/** on any device (best in landscape on mobile).
-- **Offline:** download `index.html` and double-click it — it opens in your browser and works with no internet.
+- **Online:** open **https://far-git-hub.github.io/night-hall/** on any device (landscape on mobile — it fills the whole screen).
+- **Offline:** download `index.html` and double-click it — works with no internet.
 
 ## Controls
 
 | Action | Keyboard | Touch |
 |---|---|---|
-| Walk | ◄ ► or A / D | on-screen pad |
-| Talk / continue | E or Space | TALK button |
-| Mute sound | M | 🔊 button |
+| Walk (free 4-direction) | WASD / arrow keys | drag anywhere (floating joystick) |
+| Talk / continue | E, Space or Enter | TALK button |
+| Swing sword | F, X or J | SWORD button |
+| Mute sound | M | ♪ button |
+
+Yes, you can hit your own fleet with the sword. They will have opinions about it. Sensi parries. The Goddess... try it and see.
 
 ## Under the hood
 
-- Pure HTML5 Canvas — pixel art, lighting, and characters all drawn in code.
-- Chiptune music and sound effects synthesized live with the Web Audio API (no audio files).
-- Works on desktop and mobile; landscape orientation recommended.
+- Pure HTML5 Canvas — three rooms, lighting, particles and every character drawn in code, no image files.
+- Calm nocturne soundtrack (Zelda-lullaby mood) and all sound effects synthesized live with the Web Audio API — no audio files.
+- Top-down movement, room transitions, big readable text and full-screen 16:9 rendering tuned for phones.
 
 Built for fun. 🔥
