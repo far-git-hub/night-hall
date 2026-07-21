@@ -149,51 +149,58 @@ function noise(d=.06,v=.05,fq=1100){ if(!AC||muted)return;
   for(let i=0;i<dt.length;i++)dt[i]=(Math.random()*2-1)*Math.pow(1-i/dt.length,2);
   const s=AC.createBufferSource();s.buffer=b;const f=AC.createBiquadFilter();f.type='lowpass';f.frequency.value=fq;
   const g=AC.createGain();g.gain.value=v;s.connect(f).connect(g).connect(master);s.start();}
-// --- gentle 8-bar nocturne in C, 3 layers: harp arpeggio, singing lead, deep bass ---
-const STEP=0.30; // seconds per eighth
-const CHORDS=[['c3','e4','g4','c5'],['a2','e4','a4','c5'],['f2','f4','a4','c5'],['g2','d4','g4','b4'],
-              ['c3','e4','g4','c5'],['f2','f4','a4','c5'],['d3','d4','f4','a4'],['g2','d4','g4','b4']];
-const ARP=[1,2,3,2, 1,2,3,2]; // index into chord tones per eighth
-const MELODY={0:['e5',5],6:['g5',2],8:['a5',4],12:['g5',2],14:['e5',2],16:['d5',5],22:['e5',2],
-  24:['c5',7],32:['e5',4],36:['d5',2],38:['c5',2],40:['a4',5],46:['c5',2],48:['d5',4],52:['b4',4],56:['c5',7]};
+// --- slow 16-bar nocturne in C (A/B sections), sparse harp, singing lead, deep bass ---
+const STEP=0.36; // seconds per eighth — unhurried
+const CHORDS=[
+  ['c3','e4','g4','c5'],['a2','e4','a4','c5'],['f2','f4','a4','c5'],['g2','d4','g4','b4'],
+  ['c3','e4','g4','c5'],['f2','f4','a4','c5'],['d3','d4','f4','a4'],['g2','d4','g4','b4'],
+  ['a2','e4','a4','c5'],['e3','e4','g4','b4'],['f2','f4','a4','c5'],['c3','e4','g4','c5'],
+  ['f2','f4','a4','c5'],['g2','d4','g4','b4'],['c3','e4','g4','c5'],['c3','e4','g4','c5']];
+const MELODY={0:['e5',5],6:['g5',2],8:['a5',6],16:['a4',4],20:['c5',4],24:['d5',6],30:['b4',2],
+  32:['c5',8],40:['a4',4],44:['f5',4],48:['d5',4],52:['e5',4],56:['d5',7],
+  64:['c5',4],68:['e5',4],72:['b4',6],78:['g4',2],80:['a4',6],86:['c5',2],88:['g4',8],
+  96:['a4',4],100:['c5',4],104:['b4',4],108:['d5',4],112:['c5',10]};
 let mstep=0;
 function musicStep(){
-  if(muted||!AC){mstep=(mstep+1)%64;return;}
+  if(muted||!AC){mstep=(mstep+1)%128;return;}
   if(room==='dojo')stepDojo(); else if(room==='throne')stepThrone(); else stepHall();
-  mstep=(mstep+1)%64;
+  mstep=(mstep+1)%128;
 }
-// hall: gentle nocturne
+// hall: gentle nocturne — three soft harp touches per bar, never a running arpeggio
 function stepHall(){
   const bar=(mstep/8)|0, sub=mstep%8, ch=CHORDS[bar];
-  tone(NF(ch[ARP[sub]]),STEP*2.2,'sine',.045);                      // harp
-  if(sub===0)tone(NF(ch[0]),STEP*7.5,'sine',.075);                  // bass
-  if(sub===4)tone(NF(ch[0])*1.5,STEP*3.4,'sine',.03);
+  if(bar%8!==7){ // rest every 8th bar so the piece breathes
+    if(sub===0)tone(NF(ch[1]),STEP*4.5,'sine',.03);
+    if(sub===3)tone(NF(ch[2]),STEP*4.5,'sine',.026);
+    if(sub===5)tone(NF(ch[3]),STEP*3.5,'sine',.022);
+  }
+  if(sub===0)tone(NF(ch[0]),STEP*8.5,'sine',.06);                   // deep slow bass
   const m=MELODY[mstep];
-  if(m)tone(NF(m[0]),STEP*m[1]*0.95,'triangle',.07,0,true);         // lead
-  if(Math.random()<.02)tone(NF(['e6','g6','c6','d6'][Math.random()*4|0]),.5,'sine',.018);
+  if(m)tone(NF(m[0]),STEP*m[1]*0.95,'triangle',.062,0,true);        // singing lead + echo
 }
 // dojo: koto plucks on the hirajoshi scale, taiko heartbeat, low drone
 const KOTO={0:'e4',2:'g4',4:'b4',6:'c5',10:'b4',12:'g4',16:'e4',22:'f#4',24:'g4',28:'e4',
   32:'b4',34:'c5',36:'e5',40:'b4',44:'c5',46:'b4',48:'g4',52:'f#4',56:'e4',62:'b3'};
 function stepDojo(){
-  const n=KOTO[mstep];
+  const s=mstep%64, n=KOTO[s];
   if(n){ tone(NF(n),.42,'triangle',.065); tone(NF(n)*2,.15,'sine',.022); }   // pluck + string shimmer
-  if(mstep===0||mstep===32)tone(NF('e2'),STEP*15,'sine',.05);                // drone
-  if(mstep===16||mstep===48){ noise(.1,.06,220); tone(56,.15,'sine',.1); }   // taiko
-  if(mstep===30||mstep===58)tone(NF('b5'),1.1,'sine',.018,0,true);           // distant flute
+  if(s===0||s===32)tone(NF('e2'),STEP*15,'sine',.05);                        // drone
+  if(s===16||s===48){ noise(.1,.06,220); tone(56,.15,'sine',.1); }           // taiko
+  if(s===30||s===58)tone(NF('b5'),1.1,'sine',.018,0,true);                   // distant flute
 }
 // throne: serene temple — slow sine pads, sparse bells, deep om
 const PADS=[['c4','e4','g4'],['a3','c4','e4'],['f3','a3','c4'],['g3','b3','d4']];
 const BELLS={4:'g5',20:'c6',36:'e6',52:'d6'};
 function stepThrone(){
-  if(mstep%16===0){ const ch=PADS[(mstep/16)|0]; for(const n of ch)tone(NF(n),STEP*15,'sine',.034); }
-  if(mstep===0)tone(NF('c2'),STEP*30,'sine',.05);
-  const b=BELLS[mstep]; if(b)tone(NF(b),2.4,'sine',.028,0,true);
+  const s=mstep%64;
+  if(s%16===0){ const ch=PADS[(s/16)|0]; for(const n of ch)tone(NF(n),STEP*15,'sine',.034); }
+  if(s===0)tone(NF('c2'),STEP*30,'sine',.05);
+  const b=BELLS[s]; if(b)tone(NF(b),2.4,'sine',.028,0,true);
 }
 let room='hall';
 function ambience(){
   if(muted||!AC)return;
-  if(room==='hall'&&Math.random()<.4)noise(.06,.028,900);           // fire crackle
+  if(room==='hall'&&Math.random()<.22)noise(.06,.018,700);          // soft fire crackle
   if(room==='dojo'&&Math.random()<.08)tone(NF(['a5','c6','e6'][Math.random()*3|0]),1.4,'sine',.02,0,true); // wind chime
   if(room==='throne'&&Math.random()<.12)tone(NF(['c6','e6','g6'][Math.random()*3|0]),1.8,'sine',.016,0,true); // shimmer
 }
@@ -981,9 +988,9 @@ function roundRect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,
 function drawHUD(){
   const F=Math.max(13,SH*0.033);
   ctx.textBaseline='alphabetic';
-  if(!dlg){ // quest scroll: bottom-right, translucent, above the touch buttons
+  if(!dlg){ // quest scroll: bottom-left, translucent
     const pad=SH*0.022, lh=F*1.3, w=Math.min(SW*0.34,F*15.5), h=lh*(ORDER.length+(haveAll()&&!quest.done?2.5:1.5));
-    const qx=SW-w-pad, qy=SH-h-pad-(isTouch?Math.min(SW,SH)*0.28:0);
+    const qx=pad, qy=SH-h-pad;
     ctx.fillStyle='rgba(16,10,20,0.42)'; roundRect(ctx,qx,qy,w,h,10); ctx.fill();
     ctx.strokeStyle='rgba(200,162,74,0.4)'; ctx.lineWidth=Math.max(1,SH*0.003); ctx.stroke();
     ctx.font='800 '+F+'px Trebuchet MS'; ctx.fillStyle='rgba(255,217,138,0.9)';
@@ -1035,116 +1042,303 @@ function drawButtons(){
 // ===================== PORTRAITS (smooth vector stencils, avatar style) =====================
 const PORTRAITS={};
 function portrait(name,fn){
-  const c=document.createElement('canvas'); c.width=c.height=140;
-  const g=c.getContext('2d');
+  const c=document.createElement('canvas'); c.width=c.height=220;
+  const g=c.getContext('2d'); g.scale(220/140,220/140);
   g.fillStyle='#0b0912'; g.fillRect(0,0,140,140);
+  g.lineCap='round'; g.lineJoin='round';
   fn(g,'#0b0912'); PORTRAITS[name]=c;
 }
 function ell(g,x,y,rx,ry,rot){g.beginPath();g.ellipse(x,y,rx,ry,rot||0,0,Math.PI*2);g.fill();}
 function poly(g,pts){g.beginPath();g.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<pts.length;i++)g.lineTo(pts[i][0],pts[i][1]);g.closePath();g.fill();}
-portrait('Sensi',(g,B)=>{const C='#b5252c'; g.fillStyle=C;
-  poly(g,[[16,140],[30,102],[70,92],[110,102],[124,140]]);                 // kimono shoulders
-  g.fillStyle=B; poly(g,[[70,96],[54,140],[86,140]]);                      // collar V
-  g.fillStyle=C; ell(g,70,58,28,33);                                       // head
-  ell(g,70,17,12,9); g.fillRect(62,22,16,10);                              // topknot
-  poly(g,[[42,38],[98,38],[104,58],[92,44],[48,44],[36,58]]);              // swept hair
+
+// —— GODDESS: golden angel, halo, wavy hair, wings, serene open eyes ——
+portrait('Goddess',(g,B)=>{
+  const C='#f2b62e', D='#c68717';
+  // wings (dark gold) with carved feather notches
+  g.fillStyle=D;
+  g.beginPath();g.moveTo(30,44);g.quadraticCurveTo(4,58,4,96);g.quadraticCurveTo(4,112,12,124);
+  g.lineTo(26,124);g.quadraticCurveTo(18,92,30,44);g.closePath();g.fill();
+  g.beginPath();g.moveTo(110,44);g.quadraticCurveTo(136,58,136,96);g.quadraticCurveTo(136,112,128,124);
+  g.lineTo(114,124);g.quadraticCurveTo(122,92,110,44);g.closePath();g.fill();
   g.fillStyle=B;
-  poly(g,[[44,52],[66,58],[66,63],[44,57]]); poly(g,[[96,52],[74,58],[74,63],[96,57]]); // stern brows
-  g.fillRect(48,66,15,3.5); g.fillRect(77,66,15,3.5);                      // narrow eyes
-  g.fillRect(67,72,5,9);                                                   // nose shadow
-  g.fillStyle=C; poly(g,[[54,88],[70,134],[86,88]]);                       // long beard
-  ell(g,70,86,17,7);                                                       // mustache
-  g.fillStyle=B; g.fillRect(62,84,16,3);                                   // grim mouth
+  poly(g,[[4,74],[16,70],[6,84]]);poly(g,[[5,96],[17,90],[8,106]]);poly(g,[[8,114],[19,107],[12,122]]);
+  poly(g,[[136,74],[124,70],[134,84]]);poly(g,[[135,96],[123,90],[132,106]]);poly(g,[[132,114],[121,107],[128,122]]);
+  // back hair mass
+  g.fillStyle=D;
+  g.beginPath();g.moveTo(70,16);g.bezierCurveTo(34,18,26,52,30,88);g.quadraticCurveTo(32,116,26,134);
+  g.lineTo(114,134);g.quadraticCurveTo(108,116,110,88);g.bezierCurveTo(114,52,106,18,70,16);g.closePath();g.fill();
+  // halo
+  g.strokeStyle=C;g.lineWidth=5;
+  g.beginPath();g.ellipse(70,13,24,7,0,0,Math.PI*2);g.stroke();
+  // front hair: high crown + smooth falls hugging the face
+  g.fillStyle=C;
+  g.beginPath();g.moveTo(70,18);
+  g.bezierCurveTo(40,20,32,42,36,66);
+  g.quadraticCurveTo(28,98,36,130);
+  g.lineTo(48,130);g.quadraticCurveTo(42,100,44,74);
+  g.quadraticCurveTo(42,48,56,38);
+  g.lineTo(84,38);
+  g.quadraticCurveTo(98,48,96,74);
+  g.quadraticCurveTo(98,100,92,130);
+  g.lineTo(104,130);g.quadraticCurveTo(112,98,104,66);
+  g.bezierCurveTo(108,42,100,20,70,18);g.closePath();g.fill();
+  g.strokeStyle=B;g.lineWidth=3;
+  g.beginPath();g.moveTo(42,48);g.quadraticCurveTo(35,76,41,110);g.stroke();
+  g.beginPath();g.moveTo(98,48);g.quadraticCurveTo(105,76,99,110);g.stroke();
+  // face — larger, open
+  g.fillStyle=C;g.beginPath();g.ellipse(70,62,25,28,0,0,Math.PI*2);g.fill();
+  // thin gentle brows, high and calm
+  g.strokeStyle=B;g.lineWidth=2.2;
+  g.beginPath();g.arc(57,56,9,Math.PI*1.25,Math.PI*1.75);g.stroke();
+  g.beginPath();g.arc(83,56,9,Math.PI*1.25,Math.PI*1.75);g.stroke();
+  // serene closed eyes: elegant lash curves with outward flicks
+  g.strokeStyle=B;g.lineWidth=3;
+  g.beginPath();g.arc(57,60,7.5,Math.PI*0.15,Math.PI*0.85);g.stroke();
+  g.beginPath();g.arc(83,60,7.5,Math.PI*0.15,Math.PI*0.85);g.stroke();
+  g.lineWidth=2.2;
+  g.beginPath();g.moveTo(50,64);g.lineTo(46,62);g.stroke();
+  g.beginPath();g.moveTo(90,64);g.lineTo(94,62);g.stroke();
+  // blush
+  g.globalAlpha=0.35;g.fillStyle=D;ell(g,51,71,4,2.2);ell(g,89,71,4,2.2);g.globalAlpha=1;
+  // tiny nose + soft smile
+  g.strokeStyle=B;g.lineWidth=2;
+  g.beginPath();g.moveTo(69,70);g.lineTo(71,72);g.stroke();
+  g.lineWidth=2.6;g.beginPath();g.arc(70,78,4.5,Math.PI*0.2,Math.PI*0.8);g.stroke();
+  // neck + robe + brooch
+  g.fillStyle=C;g.fillRect(59,84,22,12);
+  g.beginPath();g.moveTo(40,134);g.quadraticCurveTo(52,96,70,94);g.quadraticCurveTo(88,96,100,134);g.closePath();g.fill();
+  g.strokeStyle=B;g.lineWidth=2.5;
+  g.beginPath();g.moveTo(58,110);g.quadraticCurveTo(70,106,82,110);g.stroke();
+  g.fillStyle=D;ell(g,70,102,3.5,3.5);g.fillStyle='#fff3cf';ell(g,70,102,1.5,1.5);
 });
-portrait('Panda',(g,B)=>{const C='#e2e0d8'; g.fillStyle=C;
-  ell(g,70,150,58,50);                                                     // big round body
-  g.strokeStyle=C; g.lineWidth=5;
-  g.beginPath();g.arc(34,32,15,0,Math.PI*2);g.stroke();                    // ear rings
-  g.beginPath();g.arc(106,32,15,0,Math.PI*2);g.stroke();
-  ell(g,70,64,40,36);                                                      // head
-  g.fillStyle=B; ell(g,52,60,11,14,-0.35); ell(g,88,60,11,14,0.35);        // eye patches
-  g.strokeStyle=C; g.lineWidth=3.5;
-  g.beginPath();g.arc(52,62,5,Math.PI*1.15,Math.PI*1.85);g.stroke();       // happy closed eyes
-  g.beginPath();g.arc(88,62,5,Math.PI*1.15,Math.PI*1.85);g.stroke();
-  g.fillStyle=B; ell(g,70,78,7,5);                                         // nose
-  g.strokeStyle=B; g.lineWidth=3.5;
-  g.beginPath();g.arc(70,80,13,Math.PI*0.18,Math.PI*0.82);g.stroke();      // grin
+
+// —— PANDA: chunky, smug, mid-snack ——
+portrait('Panda',(g,B)=>{
+  const W='#e9e7df', S='#c6c3b8', K='#232329';
+  g.fillStyle=W;g.beginPath();g.ellipse(70,150,60,52,0,0,Math.PI*2);g.fill();     // body
+  g.fillStyle=K;                                                                  // black arms
+  g.beginPath();g.ellipse(32,126,20,14,0.5,0,Math.PI*2);g.fill();
+  g.beginPath();g.ellipse(108,126,20,14,-0.5,0,Math.PI*2);g.fill();
+  g.fillStyle=K;ell(g,34,24,16,15);ell(g,106,24,16,15);                           // ears
+  g.strokeStyle=W;g.lineWidth=4;
+  g.beginPath();g.arc(34,24,16,0,Math.PI*2);g.stroke();
+  g.beginPath();g.arc(106,24,16,0,Math.PI*2);g.stroke();
+  g.fillStyle=W;g.beginPath();g.ellipse(70,64,44,40,-0.06,0,Math.PI*2);g.fill();  // head
+  g.fillStyle=B;                                                                  // cheek fur spikes
+  poly(g,[[26,62],[35,58],[29,70]]);poly(g,[[28,80],[37,74],[33,86]]);
+  poly(g,[[114,62],[105,58],[111,70]]);poly(g,[[112,80],[103,74],[107,86]]);
+  g.fillStyle=K;                                                                  // eye patches
+  g.beginPath();g.ellipse(50,58,13,16,-0.45,0,Math.PI*2);g.fill();
+  g.beginPath();g.ellipse(90,58,13,16,0.45,0,Math.PI*2);g.fill();
+  g.strokeStyle=W;g.lineWidth=4;                                                  // happy closed eyes
+  g.beginPath();g.arc(50,61,6,Math.PI*1.1,Math.PI*1.9);g.stroke();
+  g.beginPath();g.arc(90,61,6,Math.PI*1.1,Math.PI*1.9);g.stroke();
+  g.fillStyle=K;g.beginPath();g.ellipse(70,76,8,5.5,0,0,Math.PI*2);g.fill();      // nose
+  g.strokeStyle=K;g.lineWidth=4;
+  g.beginPath();g.moveTo(70,81);g.quadraticCurveTo(70,87,62,89);g.stroke();
+  g.beginPath();g.moveTo(70,87);g.quadraticCurveTo(84,94,94,85);g.stroke();       // smirk
+  g.strokeStyle=S;g.lineWidth=3;
+  g.beginPath();g.arc(70,97,16,Math.PI*0.25,Math.PI*0.75);g.stroke();             // chin
+  g.strokeStyle='#7fae4a';g.lineWidth=5;                                          // bamboo snack
+  g.beginPath();g.moveTo(36,118);g.lineTo(58,97);g.stroke();
+  g.strokeStyle=B;g.lineWidth=1.5;g.beginPath();g.moveTo(47,107);g.lineTo(50,110);g.stroke();
 });
-portrait('Goddess',(g,B)=>{const C='#f2c24a'; g.fillStyle=C;
-  g.strokeStyle=C; g.lineWidth=5;
-  g.beginPath();g.ellipse(70,14,22,7,0,0,Math.PI*2);g.stroke();            // halo
-  g.beginPath();g.moveTo(70,22);                                           // flowing hair mass
-  g.bezierCurveTo(24,26,18,74,26,140); g.lineTo(46,140);
-  g.bezierCurveTo(38,96,42,74,48,64); g.lineTo(92,64);
-  g.bezierCurveTo(98,74,102,96,94,140); g.lineTo(114,140);
-  g.bezierCurveTo(122,74,116,26,70,22); g.closePath(); g.fill();
-  ell(g,70,60,24,29);                                                      // face
-  g.strokeStyle=B; g.lineWidth=2.5;
-  g.beginPath();g.ellipse(70,60,24,29,0,-1.15,1.15);g.stroke();            // hair-face separation (right)
-  g.beginPath();g.ellipse(70,60,24,29,0,Math.PI-1.15,Math.PI+1.15);g.stroke(); // (left)
-  g.beginPath();g.moveTo(70,32);g.quadraticCurveTo(52,36,44,50);g.stroke();    // parted hair strands
-  g.beginPath();g.moveTo(70,32);g.quadraticCurveTo(88,36,96,50);g.stroke();
-  g.lineWidth=3;
-  g.beginPath();g.arc(57,62,7,Math.PI*1.1,Math.PI*1.9);g.stroke();         // serene lashes
-  g.beginPath();g.arc(83,62,7,Math.PI*1.1,Math.PI*1.9);g.stroke();
-  g.fillStyle=B; g.fillRect(53,64,3,2); g.fillRect(87,64,3,2);             // lash tips
-  ell(g,70,74,2,3);                                                        // nose
-  g.beginPath();g.arc(70,80,6,Math.PI*0.15,Math.PI*0.85);g.stroke();       // soft smile
-  g.fillRect(58,96,24,3);                                                  // choker line above gown
+
+// —— SENSI: stern profile, topknot, long beard, flowing hair ——
+portrait('Sensi',(g,B)=>{
+  const C='#bc2730', D='#8c151d';
+  g.fillStyle=D;                                                                  // flowing back hair, spiky tips
+  g.beginPath();g.moveTo(66,20);
+  g.bezierCurveTo(96,14,110,34,106,58);g.quadraticCurveTo(114,84,106,106);
+  g.lineTo(94,98);g.lineTo(102,118);g.lineTo(86,108);g.lineTo(90,128);g.lineTo(72,108);
+  g.quadraticCurveTo(80,66,66,20);g.closePath();g.fill();
+  g.fillStyle=C;ell(g,86,13,12,9);                                                // topknot
+  g.fillStyle=B;g.fillRect(76,16,6,3);
+  g.fillStyle=C;                                                                  // head profile (facing left)
+  g.beginPath();g.moveTo(84,20);
+  g.bezierCurveTo(62,22,52,34,50,46);
+  g.lineTo(42,52);g.lineTo(46,57);
+  g.quadraticCurveTo(41,64,36,70);g.lineTo(43,74);
+  g.quadraticCurveTo(45,78,42,82);g.lineTo(48,87);
+  g.quadraticCurveTo(46,92,50,97);
+  g.lineTo(64,110);g.lineTo(90,112);
+  g.quadraticCurveTo(98,66,84,20);g.closePath();g.fill();
+  g.fillStyle=D;                                                                  // swept hair over skull
+  g.beginPath();g.moveTo(86,22);
+  g.bezierCurveTo(60,20,50,32,48,45);
+  g.lineTo(57,44);g.quadraticCurveTo(60,32,73,28);
+  g.quadraticCurveTo(81,26,88,31);g.closePath();g.fill();
+  g.strokeStyle=B;g.lineWidth=2;
+  g.beginPath();g.moveTo(64,26);g.quadraticCurveTo(56,32,53,42);g.stroke();       // hair strand
+  g.fillStyle=B;poly(g,[[44,50],[63,45],[64,50],[46,55]]);                        // heavy brow
+  poly(g,[[50,57],[64,55],[62,61],[52,60]]);                                      // narrow eye
+  g.fillStyle=C;ell(g,57,58,1.6,1.6);
+  g.strokeStyle=B;g.lineWidth=2;
+  g.beginPath();g.moveTo(60,70);g.quadraticCurveTo(64,76,62,82);g.stroke();       // cheek line
+  g.beginPath();g.arc(80,62,7,Math.PI*1.35,Math.PI*0.55);g.stroke();              // ear
+  g.fillStyle=D;                                                                  // mustache
+  g.beginPath();g.moveTo(40,80);g.quadraticCurveTo(52,86,60,82);
+  g.lineTo(60,88);g.quadraticCurveTo(48,90,40,85);g.closePath();g.fill();
+  g.beginPath();g.moveTo(44,90);                                                  // long beard
+  g.quadraticCurveTo(46,120,56,138);g.lineTo(72,138);
+  g.quadraticCurveTo(76,112,66,95);g.quadraticCurveTo(54,92,44,90);g.closePath();g.fill();
+  g.strokeStyle=B;g.lineWidth=2;
+  g.beginPath();g.moveTo(54,98);g.quadraticCurveTo(58,118,62,133);g.stroke();
+  g.fillStyle=C;                                                                  // kimono shoulder
+  poly(g,[[70,140],[80,112],[104,106],[130,120],[134,140]]);
+  g.strokeStyle=B;g.lineWidth=2.5;
+  g.beginPath();g.moveTo(86,112);g.lineTo(102,140);g.stroke();
+  g.beginPath();g.moveTo(94,109);g.lineTo(110,136);g.stroke();
 });
-portrait('Mimir',(g,B)=>{const C='#8f86d8'; g.fillStyle=C;
-  g.beginPath();g.moveTo(70,8);                                            // pointed hood
-  g.bezierCurveTo(30,22,22,66,28,140); g.lineTo(112,140);
-  g.bezierCurveTo(118,66,110,22,70,8); g.closePath(); g.fill();
-  g.fillStyle=B; ell(g,70,68,22,27);                                       // hood shadow
-  g.fillStyle='#cfc6ff'; ell(g,61,66,4,6); ell(g,79,66,4,6);               // glowing eyes
-  g.globalAlpha=0.35; ell(g,61,66,8,11); ell(g,79,66,8,11); g.globalAlpha=1;
-  g.fillStyle=C; g.fillRect(46,116,48,4);                                  // clasp
+
+// —— MIMIR: hooded critic, glowing judging eyes, rune ——
+portrait('Mimir',(g,B)=>{
+  const C='#8a80d8', D='#6058ac', GL='#e2dcff';
+  g.fillStyle=D;poly(g,[[14,140],[28,104],[70,94],[112,104],[126,140]]);          // cloak
+  g.fillStyle=C;                                                                  // hood
+  g.beginPath();g.moveTo(70,8);
+  g.bezierCurveTo(34,20,26,60,32,100);g.quadraticCurveTo(50,112,70,112);
+  g.quadraticCurveTo(90,112,108,100);g.bezierCurveTo(114,60,106,20,70,8);g.closePath();g.fill();
+  g.strokeStyle=B;g.lineWidth=3;                                                  // fabric folds
+  g.beginPath();g.moveTo(70,10);g.quadraticCurveTo(63,26,66,38);g.stroke();
+  g.beginPath();g.moveTo(44,30);g.quadraticCurveTo(38,60,42,92);g.stroke();
+  g.beginPath();g.moveTo(96,30);g.quadraticCurveTo(102,60,98,92);g.stroke();
+  g.fillStyle=B;g.beginPath();g.ellipse(70,74,23,28,0,0,Math.PI*2);g.fill();      // face shadow
+  g.globalAlpha=0.25;g.fillStyle=GL;ell(g,60,73,10,12);ell(g,80,73,10,12);g.globalAlpha=1;
+  g.fillStyle=GL;                                                                 // angular judging eyes
+  poly(g,[[53,71],[66,69],[64,78],[55,77]]);
+  poly(g,[[87,71],[74,69],[76,78],[85,77]]);
+  g.fillStyle=GL;poly(g,[[70,22],[75,29],[70,36],[65,29]]);ell(g,70,42,1.8,1.8);  // rune
+  g.fillStyle=D;ell(g,70,120,7,7);g.fillStyle=C;ell(g,70,120,4,4);g.fillStyle=B;ell(g,70,120,2,2); // clasp
 });
-portrait('Scholar',(g,B)=>{const C='#43b0a0'; g.fillStyle=C;
-  poly(g,[[22,140],[34,104],[70,96],[106,104],[118,140]]);                 // robe
-  ell(g,70,60,27,31);                                                      // head
-  poly(g,[[42,46],[98,46],[100,34],[70,26],[40,34]]);                      // short neat hair
-  g.strokeStyle=B; g.lineWidth=3.5;
-  g.beginPath();g.arc(55,64,10,0,Math.PI*2);g.stroke();                    // round glasses
-  g.beginPath();g.arc(85,64,10,0,Math.PI*2);g.stroke();
-  g.beginPath();g.moveTo(65,64);g.lineTo(75,64);g.stroke();
-  g.fillStyle=B; ell(g,55,64,3,3.5); ell(g,85,64,3,3.5);                   // eyes
-  g.beginPath();g.arc(70,80,7,Math.PI*0.15,Math.PI*0.85);g.stroke();       // smile
+
+// —— SCHOLAR: neat hair, round glasses, warm smile, book ——
+portrait('Scholar',(g,B)=>{
+  const C='#41b2a0', D='#2b8172', P='#eee7d0';
+  g.fillStyle=D;poly(g,[[18,140],[32,102],[70,94],[108,102],[122,140]]);          // robe
+  g.fillStyle=C;poly(g,[[58,140],[70,98],[82,140]]);
+  g.fillStyle=C;g.beginPath();g.ellipse(70,58,27,30,0,0,Math.PI*2);g.fill();      // head
+  g.fillStyle=D;                                                                  // neat hair cap with side part
+  g.beginPath();g.moveTo(43,54);
+  g.quadraticCurveTo(38,22,70,20);g.quadraticCurveTo(102,22,97,54);
+  g.quadraticCurveTo(96,40,88,34);g.quadraticCurveTo(70,26,52,36);
+  g.quadraticCurveTo(45,42,43,54);g.closePath();g.fill();
+  g.strokeStyle=B;g.lineWidth=2;
+  g.beginPath();g.moveTo(74,24);g.quadraticCurveTo(84,28,90,38);g.stroke();       // part strand
+  g.strokeStyle=B;g.lineWidth=2.5;                                                // brows
+  g.beginPath();g.moveTo(48,50);g.quadraticCurveTo(55,47,62,50);g.stroke();
+  g.beginPath();g.moveTo(78,50);g.quadraticCurveTo(85,47,92,50);g.stroke();
+  g.strokeStyle=B;g.lineWidth=3.5;                                                // round glasses
+  g.beginPath();g.arc(55,62,10,0,Math.PI*2);g.stroke();
+  g.beginPath();g.arc(85,62,10,0,Math.PI*2);g.stroke();
+  g.beginPath();g.moveTo(65,62);g.quadraticCurveTo(70,59,75,62);g.stroke();
+  g.lineWidth=2.5;
+  g.beginPath();g.moveTo(45,60);g.lineTo(43,58);g.stroke();
+  g.beginPath();g.moveTo(95,60);g.lineTo(97,58);g.stroke();
+  g.fillStyle=B;ell(g,55,63,3,3.5);ell(g,85,63,3,3.5);                            // eyes
+  g.fillStyle=C;ell(g,54,61.5,1.2,1.2);ell(g,84,61.5,1.2,1.2);
+  g.strokeStyle=B;g.lineWidth=2.5;
+  g.beginPath();g.moveTo(69,71);g.lineTo(71,73);g.stroke();                       // nose
+  g.beginPath();g.arc(70,77,8,Math.PI*0.15,Math.PI*0.85);g.stroke();              // smile
+  g.fillStyle=D;g.fillRect(94,118,32,18);                                         // book
+  g.fillStyle=P;g.fillRect(97,121,26,5);g.fillStyle=B;g.fillRect(97,127,26,2);
 });
-portrait('Cyber',(g,B)=>{const C='#4f9ad0'; g.fillStyle=C;
-  poly(g,[[20,140],[32,104],[70,96],[108,104],[120,140]]);                 // jacket
-  ell(g,70,60,27,31);                                                      // head
-  poly(g,[[42,44],[54,30],[62,42],[72,26],[82,42],[92,30],[98,44],[98,52],[42,52]]); // spiky hair
-  g.fillStyle=B; g.fillRect(76,42,3,44);                                   // faceplate seam
-  ell(g,90,64,9,9);                                                        // implant socket
-  g.fillStyle='#ffb060'; ell(g,90,64,4,4);                                 // glowing implant eye
-  g.globalAlpha=0.35; ell(g,90,64,8,8); g.globalAlpha=1;
-  g.fillStyle=B; ell(g,54,64,5,6); g.fillStyle=C; ell(g,54,64,2,2.5);      // human eye
-  g.fillStyle=B; g.fillRect(84,80,10,3); g.fillRect(58,84,14,3);           // plate vent + mouth
-  g.fillStyle='#7fd8ff'; g.fillRect(30,112,26,3); g.fillRect(30,112,3,16); // circuit lines
+
+// —— CYBER: cyborg, spiky hair, faceplate + glowing implant ——
+portrait('Cyber',(g,B)=>{
+  const C='#5aa2d8', D='#2f6da0', M='#b4c0cc', MD='#7e8c9a', A='#ffa03a', CY='#7fe0ff';
+  g.fillStyle=D;poly(g,[[16,140],[30,104],[70,96],[110,104],[124,140]]);          // jacket
+  g.strokeStyle=CY;g.lineWidth=2.5;                                               // circuit traces
+  g.beginPath();g.moveTo(36,116);g.lineTo(52,116);g.lineTo(52,132);g.stroke();
+  g.fillStyle=CY;ell(g,52,132,2.2,2.2);
+  g.fillStyle=C;g.fillRect(62,84,16,14);                                          // neck
+  g.fillStyle=C;g.beginPath();g.ellipse(70,56,27,31,0,0,Math.PI*2);g.fill();      // head
+  g.fillStyle=M;                                                                  // metal plate (right)
+  g.beginPath();g.moveTo(78,26);g.quadraticCurveTo(100,30,97,58);
+  g.quadraticCurveTo(97,76,88,85);g.lineTo(78,85);g.closePath();g.fill();
+  g.strokeStyle=B;g.lineWidth=2;
+  g.beginPath();g.moveTo(78,26);g.lineTo(78,85);g.stroke();                       // seam
+  g.beginPath();g.moveTo(78,44);g.lineTo(95,44);g.stroke();
+  g.fillStyle=MD;ell(g,91,35,2.2,2.2);ell(g,84,79,2.2,2.2);                       // bolts
+  g.fillStyle=B;ell(g,88,58,8,8);                                                 // implant socket
+  g.globalAlpha=0.3;g.fillStyle=A;ell(g,88,58,11,11);g.globalAlpha=1;
+  g.fillStyle=A;ell(g,88,58,4.5,4.5);g.fillStyle='#fff0d8';ell(g,88,58,1.6,1.6);
+  g.fillStyle=D;                                                                  // jagged dark hair
+  g.beginPath();g.moveTo(44,50);
+  g.quadraticCurveTo(40,22,70,20);g.quadraticCurveTo(84,20,90,26);
+  g.lineTo(78,30);g.lineTo(72,23);g.lineTo(68,33);g.lineTo(58,25);g.lineTo(58,37);g.lineTo(48,33);
+  g.quadraticCurveTo(46,42,44,50);g.closePath();g.fill();
+  g.fillStyle=B;poly(g,[[46,49],[64,47],[64,51],[46,53]]);                        // brow slash
+  poly(g,[[46,56],[64,54],[62,62],[48,62]]);                                      // sharp eye
+  g.fillStyle=C;ell(g,55,58,2,2);
+  g.strokeStyle=B;g.lineWidth=2.5;
+  g.beginPath();g.moveTo(58,78);g.quadraticCurveTo(68,82,76,78);g.stroke();       // smirk
 });
-portrait('Quant',(g,B)=>{const C='#b4bec8'; g.fillStyle=C;
-  poly(g,[[24,140],[36,110],[104,110],[116,140]]);                         // chassis
-  g.fillRect(66,16,8,14); ell(g,70,12,6,6);                                // antenna
-  roundRect(g,36,30,68,66,12); g.fill();                                   // head
-  g.fillStyle=B; roundRect(g,44,48,52,20,6); g.fill();                     // visor
-  g.fillStyle='#7fe0ff'; g.fillRect(52,53,10,10); g.fillRect(78,53,10,10); // glowing eyes
-  g.fillStyle=B; g.fillRect(54,80,4,8); g.fillRect(62,80,4,8); g.fillRect(70,80,4,8); g.fillRect(78,80,4,8); // grille
-  ell(g,40,62,3,3); ell(g,100,62,3,3);                                     // bolts
-  g.fillStyle='#ffcf5a'; ell(g,70,124,8,8); g.fillStyle=B; ell(g,70,124,4,4); // coin core
+
+// —— QUANT: friendly ledger-bot, glowing visor eyes, coin core ——
+portrait('Quant',(g,B)=>{
+  const M='#bcc6d2', MD='#8892a0', GL='#5ee6ff', GO='#f2c24a';
+  g.save();g.translate(70,70);g.rotate(-0.06);g.translate(-70,-70);
+  g.fillStyle=MD;poly(g,[[20,140],[32,106],[108,106],[120,140]]);                 // chassis
+  g.fillStyle=M;g.fillRect(32,106,76,6);
+  g.fillStyle=GO;ell(g,70,128,10,10);g.fillStyle=B;ell(g,70,128,5,5);             // coin core
+  g.fillStyle=GO;g.fillRect(68,123,4,10);
+  g.strokeStyle=MD;g.lineWidth=4;                                                 // neck cables
+  g.beginPath();g.moveTo(58,96);g.quadraticCurveTo(56,102,58,107);g.stroke();
+  g.beginPath();g.moveTo(70,96);g.lineTo(70,107);g.stroke();
+  g.beginPath();g.moveTo(82,96);g.quadraticCurveTo(84,102,82,107);g.stroke();
+  g.strokeStyle=MD;g.lineWidth=5;                                                 // antenna
+  g.beginPath();g.moveTo(70,26);g.lineTo(70,13);g.stroke();
+  g.globalAlpha=0.3;g.fillStyle=GL;ell(g,70,10,8,8);g.globalAlpha=1;
+  g.fillStyle=GL;ell(g,70,10,4,4);
+  g.fillStyle=M;roundRect(g,34,26,72,68,16);g.fill();                             // head
+  g.fillStyle=MD;roundRect(g,34,26,72,12,10);g.fill();
+  g.fillStyle=MD;g.fillRect(26,52,8,22);g.fillRect(106,52,8,22);                  // side vents
+  g.fillStyle=B;
+  g.fillRect(28,56,4,3);g.fillRect(28,62,4,3);g.fillRect(28,68,4,3);
+  g.fillRect(108,56,4,3);g.fillRect(108,62,4,3);g.fillRect(108,68,4,3);
+  g.fillStyle=B;roundRect(g,42,44,56,26,8);g.fill();                              // visor
+  g.globalAlpha=0.35;g.fillStyle=GL;roundRect(g,48,50,14,14,4);g.fill();roundRect(g,76,48,14,18,4);g.fill();g.globalAlpha=1;
+  g.fillStyle=GL;roundRect(g,50,52,10,10,3);g.fill();roundRect(g,78,50,10,14,3);g.fill();
+  g.fillStyle='#eafcff';g.fillRect(52,54,3,3);g.fillRect(80,52,3,3);
+  g.fillStyle=B;                                                                  // chin grille
+  g.fillRect(52,78,5,10);g.fillRect(61,78,5,10);g.fillRect(70,78,5,10);g.fillRect(79,78,5,10);
+  g.fillStyle=B;ell(g,40,82,2.2,2.2);ell(g,100,82,2.2,2.2);
+  g.restore();
 });
-portrait('Donkey',(g,B)=>{const C='#9a939e'; g.fillStyle=C;
-  ell(g,44,26,10,22,-0.25); ell(g,96,26,10,22,0.25);                       // long ears
-  g.fillStyle=B; ell(g,44,26,4.5,13,-0.25); ell(g,96,26,4.5,13,0.25);      // inner ears
-  g.fillStyle=C; ell(g,70,66,30,34);                                       // head
-  ell(g,70,92,22,18);                                                      // muzzle
-  poly(g,[[56,34],[84,34],[80,48],[70,42],[60,48]]);                       // mane tuft
-  g.fillStyle=B; ell(g,60,90,4,5.5); ell(g,80,90,4,5.5);                   // nostrils
-  ell(g,56,60,4,5); ell(g,84,60,4,5);                                      // eyes
-  g.fillRect(50,54,12,3); g.fillRect(78,54,12,3);                          // sleepy lids
-  g.strokeStyle=B; g.lineWidth=3;
-  g.beginPath();g.arc(70,78,16,Math.PI*0.2,Math.PI*0.8);g.stroke();        // muzzle crease
+
+// —— DONKEY: skeptical long-eared tidysmith chewing straw ——
+portrait('Donkey',(g,B)=>{
+  const C='#a89fae', D='#7c7482', MN='#4a4452', MU='#d2ccd8', BL='#7a3a2a', BT='#d8c69a', ST='#e0b95a';
+  g.fillStyle=C;g.beginPath();g.ellipse(42,22,11,24,-0.28,0,Math.PI*2);g.fill();  // ear up
+  g.fillStyle=B;g.beginPath();g.ellipse(42,24,5,15,-0.28,0,Math.PI*2);g.fill();
+  g.fillStyle=C;                                                                  // ear flopped
+  g.beginPath();g.moveTo(88,20);g.quadraticCurveTo(114,6,124,26);
+  g.quadraticCurveTo(112,38,94,34);g.closePath();g.fill();
+  g.fillStyle=B;g.beginPath();g.moveTo(98,22);g.quadraticCurveTo(112,15,116,25);
+  g.quadraticCurveTo(108,30,100,28);g.closePath();g.fill();
+  g.fillStyle=C;g.beginPath();g.ellipse(70,62,33,37,0.04,0,Math.PI*2);g.fill();   // head
+  g.fillStyle=MN;                                                                 // mane crest
+  poly(g,[[52,28],[59,14],[64,28],[71,15],[78,29],[85,19],[88,32],[54,37]]);
+  g.fillStyle=MU;g.beginPath();g.ellipse(72,92,27,22,0.05,0,Math.PI*2);g.fill();  // muzzle
+  g.strokeStyle=D;g.lineWidth=2.5;
+  g.beginPath();g.arc(72,90,25,Math.PI*1.15,Math.PI*1.85);g.stroke();
+  g.fillStyle=B;                                                                  // nostrils
+  g.beginPath();g.ellipse(60,92,4,5.5,-0.3,0,Math.PI*2);g.fill();
+  g.beginPath();g.ellipse(84,92,4,5.5,0.3,0,Math.PI*2);g.fill();
+  g.strokeStyle=B;g.lineWidth=2.5;                                                // mouth
+  g.beginPath();g.moveTo(58,102);g.quadraticCurveTo(72,108,86,102);g.stroke();
+  g.strokeStyle=ST;g.lineWidth=3;                                                 // straw
+  g.beginPath();g.moveTo(84,103);g.lineTo(112,88);g.stroke();
+  g.fillStyle=ST;poly(g,[[112,88],[121,83],[114,93]]);
+  g.fillStyle=B;ell(g,54,58,5.5,6);ell(g,88,58,5.5,6);                            // eyes
+  g.fillStyle=C;g.fillRect(46,49,17,7);g.fillRect(80,49,17,7);                    // heavy lids
+  g.strokeStyle=B;g.lineWidth=2.5;
+  g.beginPath();g.moveTo(47,56);g.lineTo(62,56);g.stroke();
+  g.beginPath();g.moveTo(81,56);g.lineTo(96,56);g.stroke();
+  g.fillStyle=BL;g.fillRect(34,122,72,18);                                        // tidy blanket
+  g.fillStyle=BT;g.fillRect(34,122,72,4);g.fillRect(34,136,72,4);
+  g.fillRect(50,129,5,5);g.fillRect(68,129,5,5);g.fillRect(86,129,5,5);
 });
 function drawDialogue(){
   if(!dlg)return;
