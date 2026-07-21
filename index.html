@@ -518,13 +518,13 @@ function layoutRooms(){
   rooms.hall={
     doors:[
       {to:'dojo',   cx:W*0.13, hw:16, sx:()=>VW*0.5,  sy:()=>VH-26},
-      {to:'throne', cx:W*0.50, hw:22, sx:()=>VW*0.5,  sy:()=>VH-26},
+      {to:'throne', cx:W*0.50, hw:22, sx:()=>VW*0.5,  sy:()=>rooms.throne.h-26},
     ],
     exit:null,
     sideDoors:[{side:'left',cy:158,hh:22,to:'workers',dir:'l',sx:()=>VW-26,sy:()=>158}],
     colliders:[
       {x:W*0.30,y:148,w:W*0.32,h:24},          // feast table
-      {x:W*0.72,y:210,w:W*0.16,h:16},          // panda's feast table
+      {x:W*0.72,y:178,w:W*0.16,h:16},          // panda's feast table (above the touch buttons)
       {x:8,y:VH-46,w:34,h:18},                 // barrels
       {x:W*0.78,y:WALL+2,w:W*0.13,h:14},       // hearth
     ],
@@ -538,12 +538,15 @@ function layoutRooms(){
     ],
   };
   rooms.throne={
+    h:520,                                     // a LONG corridor — she is not seen from the door
     doors:[], exit:{cx:VW*0.5,hw:24,to:'hall',sx:()=>VW*0.50,sy:()=>WALL+22},
     colliders:[
       {x:VW/2-52,y:74,w:104,h:40},             // dais + throne
       {x:VW*0.30-7,y:104,w:14,h:12},{x:VW*0.70-7,y:104,w:14,h:12},   // braziers
-      {x:VW*0.15-8,y:118,w:16,h:10},{x:VW*0.85-8,y:118,w:16,h:10},   // pillars
-      {x:VW*0.15-8,y:186,w:16,h:10},{x:VW*0.85-8,y:186,w:16,h:10},
+      {x:VW*0.15-8,y:118,w:16,h:10},{x:VW*0.85-8,y:118,w:16,h:10},   // pillars, throne end
+      {x:VW*0.15-8,y:230,w:16,h:10},{x:VW*0.85-8,y:230,w:16,h:10},   // corridor pillars
+      {x:VW*0.15-8,y:330,w:16,h:10},{x:VW*0.85-8,y:330,w:16,h:10},
+      {x:VW*0.15-8,y:430,w:16,h:10},{x:VW*0.85-8,y:430,w:16,h:10},
       {x:VW*0.22-26,y:160,w:52,h:16},{x:VW*0.78-26,y:160,w:52,h:16}, // fountains
     ],
   };
@@ -725,12 +728,13 @@ function drawDojo(){
 }
 // ---------- THRONE ROOM ----------
 function drawThrone(){
+  const RH=rooms.throne.h;
   stoneWall('#332c40','#3d3550');
-  // marble floor
-  R(0,WALL,VW,VH-WALL,'#2c2738');
+  // marble floor, the whole long corridor
+  R(0,WALL,VW,RH-WALL,'#2c2738');
   sc.fillStyle='#332d42';
-  for(let y=WALL,r4=0;y<VH;y+=20,r4++)for(let x=(r4&1)*24;x<VW;x+=48)sc.fillRect(x+1,y+1,46,18);
-  sc.fillStyle='rgba(255,255,255,0.03)'; for(let y=WALL;y<VH;y+=20)sc.fillRect(0,y,VW,1);
+  for(let y=WALL,r4=0;y<RH;y+=20,r4++)for(let x=(r4&1)*24;x<VW;x+=48)sc.fillRect(x+1,y+1,46,18);
+  sc.fillStyle='rgba(255,255,255,0.03)'; for(let y=WALL;y<RH;y+=20)sc.fillRect(0,y,VW,1);
   // grand stained glass behind throne
   const gx=VW/2;
   R(gx-30,2,60,50,'#171019'); R(gx-27,4,54,46,'#1a2050');
@@ -739,10 +743,10 @@ function drawThrone(){
   sc.fillStyle='#171019'; sc.fillRect(gx-2,4,4,46); sc.fillRect(gx-27,24,54,3);
   R(gx-8,10,16,14,'#ffe9a0');                                        // radiant center pane
   glowAt(gx,26,70,'rgba(200,170,255,1)',0.16);
-  // red-gold carpet: door -> throne (Goddess in the middle of all things)
-  R(gx-24,WALL,48,VH-WALL,'#5e1d28'); R(gx-20,WALL,40,VH-WALL,'#7d2334');
-  R(gx-24,WALL,3,VH-WALL,'#c8a24a'); R(gx+21,WALL,3,VH-WALL,'#c8a24a');
-  for(let y=WALL+10;y<VH;y+=26)R(gx-8,y,16,3,'#c8a24a');
+  // red-gold carpet: the long walk from the door to the throne
+  R(gx-24,WALL,48,RH-WALL,'#5e1d28'); R(gx-20,WALL,40,RH-WALL,'#7d2334');
+  R(gx-24,WALL,3,RH-WALL,'#c8a24a'); R(gx+21,WALL,3,RH-WALL,'#c8a24a');
+  for(let y=WALL+10;y<RH;y+=26)R(gx-8,y,16,3,'#c8a24a');
   // dais (golden steps)
   const D=rooms.throne.colliders[0];
   R(D.x-10,D.y+D.h-6,D.w+20,10,'#4a3e22'); R(D.x-10,D.y+D.h-6,D.w+20,3,'#6a5a30');
@@ -759,15 +763,22 @@ function drawThrone(){
   R(tx2-24,58,7,3,'#ffd94a'); R(tx2+17,58,7,3,'#ffd94a');
   R(tx2-6,30,12,6,'#ffd94a'); R(tx2-1,26,2,4,'#ffd94a');                // crown finial
   glowAt(tx2,70,80,'rgba(255,210,110,1)',0.20*flick);
-  // pillars
-  for(const c of rooms.throne.colliders.slice(3,7)){
+  // pillars, all the way down the corridor
+  for(const c of rooms.throne.colliders.slice(3,11)){
     R(c.x,c.y-64,c.w,72,'#443c58'); R(c.x+2,c.y-64,3,72,'#584e70'); R(c.x+c.w-4,c.y-64,3,72,'#2c2738');
     R(c.x-3,c.y-70,c.w+6,8,'#584e70'); R(c.x-3,c.y+4,c.w+6,6,'#584e70');}
   // braziers with golden fire
   for(const c of rooms.throne.colliders.slice(1,3)){
     R(c.x,c.y+2,c.w,8,'#4a3e22'); R(c.x+2,c.y,c.w-4,4,'#6a5a30');
     flame(c.x+c.w/2,c.y+1,8,14,c.x); glowAt(c.x+c.w/2,c.y-6,54,'rgba(255,190,90,1)',0.22*flick);}
-  if(Math.random()<.25)spawnPart(gx+(Math.random()-.5)*140,80+Math.random()*120,(Math.random()-.5)*.2,-.25,90,'#ffd94a',1);
+  if(Math.random()<.35)spawnPart(gx+(Math.random()-.5)*160,80+Math.random()*(RH-140),(Math.random()-.5)*.2,-.25,90,'#ffd94a',1);
+  // standing torches lining the corridor
+  for(const ty of [225,315,405]){ for(const sx3 of [gx-50,gx+50]){
+    R(sx3-2,ty-16,4,18,'#3a2c1a'); R(sx3-4,ty,8,3,'#2c2010');
+    flame(sx3,ty-15,5,9,sx3+ty); glowAt(sx3,ty-20,38,'rgba(255,180,90,1)',0.20*flick);
+  }}
+  // corridor planters
+  flowers(gx-44,270); flowers(gx+44,270); flowers(gx-44,370); flowers(gx+44,370); flowers(gx-44,462); flowers(gx+44,462);
   // white marble fountains with roaming fairies
   for(const fxr of [0.22,0.78]){
     const x=VW*fxr, y=164;
@@ -784,11 +795,11 @@ function drawThrone(){
     glowAt(x,y-4,44,'rgba(160,210,255,1)',0.12);
     flowers(x-34,y+14); flowers(x+34,y+14);
   }
-  // fairies (drawn above the fountains)
-  for(let i=0;i<6;i++){ const fc=['#ffb8e8','#b8d8ff','#c8ffd0'][i%3], side=i<3?0.22:0.78;
+  // fairies roaming the fountains and all along the corridor
+  for(let i=0;i<9;i++){ const fc=['#ffb8e8','#b8d8ff','#c8ffd0'][i%3], side=(i%2)?0.78:0.22;
     const a=tick*0.02+i*2.1;
     const fx2=VW*side+Math.cos(a)*(20+6*Math.sin(tick*0.011+i));
-    const fy2=138+Math.sin(a*1.7)*14;
+    const fy2=138+((i*89)%330)+Math.sin(a*1.7)*16;
     glowAt(fx2,fy2,10,fc,0.5);
     sc.fillStyle='#ffffff'; sc.fillRect(fx2-1,fy2-1,2,2);
     const wf=Math.sin(tick*0.5+i)*2;                                    // wing flutter
@@ -798,7 +809,7 @@ function drawThrone(){
   }
   // planters by the dais
   flowers(gx-66,116); flowers(gx+66,116);
-  drawExit(rooms.throne.exit);
+  drawExit(rooms.throne.exit,RH);
 }
 // little flower cluster / potted plant decorations
 function flowers(x,y){
@@ -811,11 +822,12 @@ function plant(x,y){
   R(x-2,y-16,3,11,'#3d6b35'); R(x-6,y-12,4,8,'#4c8040'); R(x+2,y-13,4,9,'#356030');
   R(x-7,y-15,3,4,'#4c8040'); R(x+4,y-16,3,4,'#3d6b35');
 }
-function drawExit(ex){
-  R(ex.cx-ex.hw,VH-8,ex.hw*2,8,'#171019');
-  R(ex.cx-ex.hw+3,VH-6,ex.hw*2-6,6,'#3a2c1a');
+function drawExit(ex,h){
+  h=h||VH;
+  R(ex.cx-ex.hw,h-8,ex.hw*2,8,'#171019');
+  R(ex.cx-ex.hw+3,h-6,ex.hw*2-6,6,'#3a2c1a');
   sc.fillStyle='#ffd98a'; sc.globalAlpha=0.5+0.3*Math.sin(tick*0.08);
-  sc.beginPath(); sc.moveTo(ex.cx-5,VH-14); sc.lineTo(ex.cx+5,VH-14); sc.lineTo(ex.cx,VH-9); sc.closePath(); sc.fill();
+  sc.beginPath(); sc.moveTo(ex.cx-5,h-14); sc.lineTo(ex.cx+5,h-14); sc.lineTo(ex.cx,h-9); sc.closePath(); sc.fill();
   sc.globalAlpha=1;
 }
 // ---------- THE WORKSHOP (workers' room) ----------
@@ -987,7 +999,7 @@ const npcs=[
         "Your clean copy, Link. Humble work. Nobody does it better."],grant:'clean'};
       return{lines:["All spotless, Link. Don't you dare spill on it."],grant:null};},
     {quips:["HEE-HAW?! Watch the blanket!","I carry EVERYTHING here, and this is my thanks?"]}),
-  mk('Panda','The Doubter','hall',0.80,182,260,{big:true,
+  mk('Panda','The Doubter','hall',0.80,168,260,{big:true,
     skin:'#e8c39a',hair:'#f2f2ee',hairStyle:'none',pandaMask:true,
     robe:'#d8dce0',robeHi:'#f0f2f4',robeShade:'#9aa0a6',long:true,trim:'#2a2a2a',
     boots:'#3a3a3e',acc:null,outline:'#2a2c30'},
@@ -1016,7 +1028,7 @@ function placeNPCs(){for(const n of npcs)n.x=n.fx*VW;
   player.y=Math.min(Math.max(player.y,WALL+12),VH-8);}
 
 // ===================== DIALOGUE / TALK / ATTACK =====================
-let dlg=null,toastMsg=null,toastT=0,win=false,winT=0,banner=null,flash=0,questVis=true,dmgFlash=0;
+let dlg=null,toastMsg=null,toastT=0,win=false,winT=0,banner=null,flash=0,questVis=true,dmgFlash=0,camY=0,chapter=null;
 function toggleQuest(){questVis=!questVis;sfxSel();}
 function damagePlayer(fromX,fromY){
   if(player.inv>0)return;
@@ -1030,6 +1042,7 @@ const inRoom=()=>npcs.filter(n=>n.room===room);
 function nearest(){let b=null,bd=42;for(const n of inRoom()){
   const d=Math.hypot(n.x-player.x,n.y-player.y);if(d<bd){bd=d;b=n;}}return b;}
 function handleTalk(){ if(!started||trans)return;
+  if(chapter){chapter=null;return;}
   if(win){win=false;return;}
   if(dlg){ if(dlg.shown<dlg.full.length){dlg.shown=dlg.full.length;return;}
     dlg.idx++; if(dlg.idx>=dlg.lines.length){closeDlg();return;}
@@ -1048,7 +1061,7 @@ function closeDlg(){ const g=dlg?dlg.grant:null; dlg=null;
       for(let i=0;i<60;i++)spawnPart(VW/2+(Math.random()-.5)*60,110,(Math.random()-.5)*1.6,-Math.random()*1.4,120,'#ffd94a',2);}
     else {toastMsg='✦ Received — '+LABEL[g];toastT=170;sfxItem();}}}
 function say(e,txt){e.quip=txt;e.quipT=110;}
-function handleAttack(){ if(!started||dlg||win||trans||player.atk>0||player.hurt>0)return;
+function handleAttack(){ if(!started||dlg||win||trans||chapter||player.atk>0||player.hurt>0)return;
   player.atk=16; sfxSwing();}
 function resolveHit(){
   const fv={d:[0,1],u:[0,-1],l:[-1,0],r:[1,0]}[player.dir];
@@ -1081,13 +1094,13 @@ function resolveHit(){
 }
 // ===================== MOVEMENT =====================
 function blockedAt(px,py){
-  const r5=rooms[room];
-  let minX=12, maxX=VW-12, minY=WALL+12, maxY=VH-6;
+  const r5=rooms[room], RH=r5.h||VH;
+  let minX=12, maxX=VW-12, minY=WALL+12, maxY=RH-6;
   if(r5.sideDoors)for(const d of r5.sideDoors)if(Math.abs(py-d.cy)<d.hh){
     if(d.side==='left')minX=2; else maxX=VW-2;}
   if(px<minX||px>maxX)return true;
   if(r5.doors)for(const d of r5.doors)if(Math.abs(px-d.cx)<d.hw)minY=WALL-2;
-  if(r5.exit&&Math.abs(px-r5.exit.cx)<r5.exit.hw)maxY=VH+4;
+  if(r5.exit&&Math.abs(px-r5.exit.cx)<r5.exit.hw)maxY=RH+4;
   if(py<minY||py>maxY)return true;
   for(const c of r5.colliders)
     if(px+7>c.x&&px-7<c.x+c.w&&py>c.y&&py-8<c.y+c.h)return true;
@@ -1102,11 +1115,12 @@ function update(){
   if(trans){ trans.t++;
     if(trans.t===14){room=trans.to;player.x=trans.sx();player.y=trans.sy();
       player.dir=trans.dir||(rooms[room].exit?'u':'d');
-      banner={text:BANNERS[room],t:150};}
+      if(room==='throne'&&!quest.done){ chapter={t:0,dur:320}; banner=null; sfxDivine(); }
+      else banner={text:BANNERS[room],t:150};}
     if(trans.t>=30)trans=null;
     return;}
   // player
-  if(started&&!dlg&&!win){
+  if(started&&!dlg&&!win&&!chapter){
     let [mx,my]=moveAxes();
     if(player.inv>0)player.inv--;
     if(player.hurt>0){mx=0;my=0;player.hurt--;}
@@ -1125,7 +1139,7 @@ function update(){
     const r6=rooms[room];
     if(r6.doors)for(const d of r6.doors)
       if(player.y<WALL+6&&Math.abs(player.x-d.cx)<d.hw)startTrans(d.to,d.sx,d.sy,'u');
-    if(r6.exit&&player.y>VH-2)startTrans(r6.exit.to,r6.exit.sx,r6.exit.sy,'d');
+    if(r6.exit&&player.y>(r6.h||VH)-2)startTrans(r6.exit.to,r6.exit.sx,r6.exit.sy,'d');
     if(r6.sideDoors)for(const d of r6.sideDoors)
       if(Math.abs(player.y-d.cy)<d.hh&&(d.side==='left'?player.x<6:player.x>VW-6))
         startTrans(d.to,d.sx,d.sy,d.dir);
@@ -1183,7 +1197,7 @@ function drawHUD(){
   }
   // interaction prompt
   const n=nearest();
-  if(n&&!dlg&&!win&&!trans){ const sx=ox+n.x*scale, sy=oy+(n.y-(n.spec.big?66:(n.spec.donkey?48:(n.pose?42:54)))-2+Math.sin(tick*0.12)*2)*scale;
+  if(n&&!dlg&&!win&&!trans){ const sx=ox+n.x*scale, sy=oy+(n.y-camY-(n.spec.big?66:(n.spec.donkey?48:(n.pose?42:54)))-2+Math.sin(tick*0.12)*2)*scale;
     ctx.font='800 '+(F*1.2)+'px Trebuchet MS'; ctx.textAlign='center';
     ctx.strokeStyle='#000'; ctx.lineWidth=Math.max(3,SH*0.006);
     ctx.strokeText('❕',sx,sy); ctx.fillStyle='#ffd98a'; ctx.fillText('❕',sx,sy); ctx.textAlign='left';}
@@ -1191,7 +1205,7 @@ function drawHUD(){
 function drawTags(){
   const F=Math.max(11,SH*0.026);
   ctx.textAlign='center'; ctx.font='800 '+F+'px Trebuchet MS';
-  for(const n of inRoom()){ const x=ox+n.x*scale, y=oy+(n.y-(n.spec.big?62:(n.spec.donkey?44:(n.pose==='sit'?40:52))))*scale;
+  for(const n of inRoom()){ const x=ox+n.x*scale, y=oy+(n.y-camY-(n.spec.big?62:(n.spec.donkey?44:(n.pose==='sit'?40:52))))*scale;
     ctx.strokeStyle='#000'; ctx.lineWidth=Math.max(2,SH*0.005);
     ctx.fillStyle=n.divine?'#ffe08a':'#e8d8b0';
     ctx.strokeText(n.name,x,y); ctx.fillText(n.name,x,y);
@@ -1576,6 +1590,28 @@ function drawBanner(){ if(!banner||banner.t<=0)return; banner.t--;
   ctx.strokeStyle='#000'; ctx.lineWidth=Math.max(3,SH*0.008);
   ctx.strokeText(banner.text,SW/2,SH*0.16); ctx.fillStyle='#ffd98a'; ctx.fillText(banner.text,SW/2,SH*0.16);
   ctx.textAlign='left'; ctx.globalAlpha=1;}
+function drawChapter(){ // full-screen chapter card on entering the Goddess's corridor
+  if(!chapter)return;
+  chapter.t++;
+  if(chapter.t>=chapter.dur){chapter=null;return;}
+  const t=chapter.t, D=chapter.dur;
+  const a=Math.min(1,t/30)*Math.min(1,(D-t)/45);
+  ctx.globalAlpha=Math.min(0.9,a*0.9); ctx.fillStyle='#060410'; ctx.fillRect(0,0,SW,SH);
+  ctx.globalAlpha=a; ctx.textAlign='center';
+  ctx.fillStyle='#c8a24a'; ctx.font=(SH*0.036)+'px Trebuchet MS';
+  ctx.fillText('✦     ✦     ✦',SW/2,SH*0.24);
+  ctx.fillStyle='#ffd98a'; ctx.font='800 '+(SH*0.075)+'px Trebuchet MS';
+  ctx.fillText('THE HALL OF MERCY',SW/2,SH*0.38);
+  ctx.fillStyle='#f0e4c8'; ctx.font='italic '+(SH*0.041)+'px Trebuchet MS';
+  ctx.fillText('Take heart, little hero, and walk without fear —',SW/2,SH*0.53);
+  ctx.fillText('at the end of this light waits she who is patient with all things,',SW/2,SH*0.60);
+  ctx.fillStyle='#ffe9a0';
+  ctx.fillText('and the Goddess is already glad you came.',SW/2,SH*0.68);
+  ctx.fillStyle='#c8a24a'; ctx.font=(SH*0.028)+'px Trebuchet MS';
+  ctx.globalAlpha=a*(0.45+0.45*Math.sin(tick*0.1));
+  ctx.fillText('— TALK to walk on —',SW/2,SH*0.82);
+  ctx.globalAlpha=1; ctx.textAlign='left';
+}
 function drawWin(){ winT++; const a=Math.min(1,winT/60);
   ctx.globalAlpha=a*0.88; ctx.fillStyle='#08040e'; ctx.fillRect(0,0,SW,SH); ctx.globalAlpha=a;
   ctx.textAlign='center';
@@ -1591,6 +1627,10 @@ function drawWin(){ winT++; const a=Math.min(1,winT/60);
   ctx.textAlign='left'; ctx.globalAlpha=1;}
 // ===================== RENDER =====================
 function render(){
+  const RH=rooms[room]&&rooms[room].h||VH;                 // vertical camera for long rooms
+  const camT=Math.max(0,Math.min(RH-VH,player.y-VH*0.55));
+  camY+=(camT-camY)*0.18; if(Math.abs(camT-camY)<0.4)camY=camT;
+  sc.save(); sc.translate(0,-Math.round(camY));
   drawRoomBG();
   const ents=[...inRoom(),player].sort((a,b)=>a.y-b.y);
   for(const e of ents){
@@ -1601,6 +1641,7 @@ function render(){
     if(e.atk>0)drawSlash(e);
   }
   drawParts();
+  sc.restore();
   roomLighting();
   ctx.imageSmoothingEnabled=false; ctx.fillStyle='#0d0a14'; ctx.fillRect(0,0,SW,SH);
   const shk=dmgFlash>0?Math.round(Math.sin(tick*1.7)*dmgFlash*0.35):0;
@@ -1611,7 +1652,7 @@ function render(){
     const dg=ctx.createRadialGradient(SW/2,SH/2,SH*0.3,SW/2,SH/2,SH*0.8);
     dg.addColorStop(0,'rgba(200,20,20,0)'); dg.addColorStop(1,'rgba(230,30,30,'+(0.55*a).toFixed(2)+')');
     ctx.fillStyle=dg; ctx.fillRect(0,0,SW,SH); }
-  if(started){ drawTags(); drawHUD(); drawButtons(); drawDialogue(); drawToast(); drawBanner(); }
+  if(started){ drawTags(); drawHUD(); drawButtons(); drawDialogue(); drawToast(); drawBanner(); drawChapter(); }
   if(flash>0){ ctx.globalAlpha=flash/18*0.8; ctx.fillStyle='#fff2c0'; ctx.fillRect(0,0,SW,SH); ctx.globalAlpha=1; flash--; }
   if(trans){ const a=trans.t<15?trans.t/14:(30-trans.t)/16;
     ctx.globalAlpha=Math.min(1,a); ctx.fillStyle='#060410'; ctx.fillRect(0,0,SW,SH); ctx.globalAlpha=1;}
